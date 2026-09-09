@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Just Unique Content Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+  :root{
+    --bg:#15141b; --surface:#1f1e28; --surface-2:#262533; --surface-3:#302e3d;
+    --border:#34323f; --text:#edeaf0; --text-muted:#9c98ac;
+    --accent:#e8a23d; --accent-soft:rgba(232,162,61,.14);
+    --accent-2:#5b8cff; --accent-2-soft:rgba(91,140,255,.14);
+    --success:#6fcf97; --success-soft:rgba(111,207,151,.12);
+    --danger:#e8636b; --danger-soft:rgba(232,99,107,.12);
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  ::selection{background:var(--accent-soft);}
+  .wrap{max-width:1160px;margin:0 auto;padding:32px 24px 100px;}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+  .brand{display:flex;align-items:center;gap:10px;}
+  .sprockets{display:flex;gap:4px;}
+  .sprockets span{width:5px;height:5px;background:var(--accent);opacity:.6;border-radius:1px;}
+  .brand h1{font-family:'Fraunces',serif;font-weight:600;font-size:22px;margin:0;}
+  .brand h1 em{font-style:italic;color:var(--accent);font-weight:500;}
+  .btn{font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;border-radius:9px;padding:10px 18px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:transform .08s ease,opacity .15s ease;}
+  .btn:active{transform:scale(.98);}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-primary{background:var(--accent);color:#221a08;}
+  .btn-primary:hover:not(:disabled){opacity:.92;}
+  .btn-ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--border);}
+  .btn-ghost:hover:not(:disabled){background:var(--border);}
+  .btn-small{padding:7px 12px;font-size:12.5px;border-radius:7px;}
+
+  .tagline{color:var(--text-muted);font-size:14.5px;margin:6px 0 24px;}
+
+  .settings-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:24px;display:none;}
+  .settings-panel.open{display:block;}
+  .settings-panel h3{font-family:'Fraunces',serif;font-weight:600;font-size:16px;margin:0 0 4px;}
+  .settings-note{color:var(--text-muted);font-size:13px;margin-bottom:16px;}
+  .key-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  @media (max-width:640px){.key-grid{grid-template-columns:1fr;}}
+  .key-field label{display:block;font-size:12.5px;color:var(--text-muted);margin-bottom:6px;font-family:'IBM Plex Mono',monospace;}
+  .key-field input{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 11px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;}
+  .provider-status{margin-top:16px;padding:12px 14px;background:var(--accent-2-soft);border:1px solid var(--accent-2);border-radius:9px;font-size:13px;}
+  .provider-status strong{color:var(--accent-2);}
+
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:22px;border-bottom:1px solid var(--border);padding-bottom:0;}
+  .tab-btn{background:none;border:none;color:var(--text-muted);font-family:'IBM Plex Sans',sans-serif;font-weight:600;font-size:14px;padding:11px 16px;cursor:pointer;border-bottom:2px solid transparent;}
+  .tab-btn.active{color:var(--text);border-bottom:2px solid var(--accent);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:26px;}
+  .panel h2{font-family:'Fraunces',serif;font-weight:600;font-size:21px;margin:0 0 6px;}
+  .panel .desc{color:var(--text-muted);font-size:14px;margin:0 0 20px;}
+
+  textarea, select, input[type="text"]{font-family:'IBM Plex Sans',sans-serif;}
+  textarea{width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:14.5px;padding:14px;resize:vertical;}
+  select, input[type="text"]{background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:9px 11px;font-size:13.5px;}
+  label.field-label{display:block;font-size:12.5px;color:var(--text-muted);margin:14px 0 6px;font-family:'IBM Plex Mono',monospace;}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center;}
+  .row > *{flex:1;min-width:180px;}
+
+  #scriptOutput{min-height:200px;font-family:'IBM Plex Mono',monospace;font-size:13.5px;line-height:1.65;}
+  .hint{color:var(--text-muted);font-size:13px;margin-top:10px;}
+  .hint strong{color:var(--text);}
+  .error-box{background:var(--danger-soft);border:1px solid var(--danger);border-radius:9px;padding:12px 14px;font-size:13px;margin-top:12px;}
+
+  .dropzone{border:1.5px dashed var(--border);border-radius:10px;padding:22px;text-align:center;cursor:pointer;transition:border-color .15s ease,background .15s ease;}
+  .dropzone:hover{border-color:var(--accent);background:var(--accent-soft);}
+  .dropzone.filled{border-style:solid;border-color:var(--success);background:var(--success-soft);}
+  .dropzone input{display:none;}
+  .dz-label{font-weight:600;font-size:14px;}
+  .dz-sub{color:var(--text-muted);font-size:12.5px;margin-top:4px;}
+
+  .runner-output{margin-top:18px;min-height:60px;}
+  .runner-output img, .runner-output video{max-width:100%;border-radius:10px;border:1px solid var(--border);}
+  details{margin-top:14px;}
+  details summary{cursor:pointer;font-size:13px;color:var(--text-muted);}
+
+  .shelf{position:fixed;right:0;top:0;bottom:0;width:280px;background:var(--surface);border-left:1px solid var(--border);padding:20px 16px;overflow-y:auto;transform:translateX(100%);transition:transform .2s ease;z-index:20;}
+  .shelf.open{transform:translateX(0);}
+  .shelf h3{font-family:'Fraunces',serif;font-size:16px;margin:0 0 14px;}
+  .shelf-section{margin-bottom:18px;}
+  .shelf-section h4{font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-muted);margin:0 0 8px;font-family:'IBM Plex Mono',monospace;font-weight:500;}
+  .shelf-item{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:7px 9px;margin-bottom:6px;font-size:12.5px;}
+  .shelf-item img{width:32px;height:32px;object-fit:cover;border-radius:5px;}
+  .shelf-item .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .shelf-item button{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;}
+  .shelf-empty{color:var(--text-muted);font-size:12.5px;}
+  .shelf-toggle{position:fixed;right:16px;top:16px;z-index:21;}
+
+  .assembly-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+  @media (max-width:640px){.assembly-grid{grid-template-columns:1fr;}}
+  .asset-card{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:14px;}
+  .asset-card h4{margin:0 0 8px;font-size:13px;color:var(--text-muted);font-weight:500;}
+  .image-strip{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;}
+  .image-strip img{width:70px;height:70px;object-fit:cover;border-radius:6px;flex:none;border:1px solid var(--border);}
+
+  .publish-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  @media (max-width:760px){.publish-grid{grid-template-columns:1fr;}}
+  .platform-card{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:16px;}
+  .platform-card h4{margin:0 0 8px;font-family:'Fraunces',serif;font-size:17px;font-weight:600;}
+  .platform-card ul{margin:0 0 14px;padding-left:18px;color:var(--text-muted);font-size:13px;}
+  .platform-card li{margin-bottom:4px;}
+
+  footer{position:fixed;left:0;right:0;bottom:0;text-align:center;color:var(--accent);font-size:12.5px;padding:12px 0;background:var(--bg);border-top:1px solid var(--border);z-index:15;}
+  .wrap{padding-bottom:56px;}
+</style>
+</head>
+<body>
+
+<button class="btn btn-ghost shelf-toggle" id="shelfToggleBtn">Shelf</button>
+<div class="shelf" id="shelf">
+  <h3>Project shelf</h3>
+  <div class="shelf-section"><h4>Voices</h4><div id="shelf-voices"><div class="shelf-empty">None yet</div></div></div>
+  <div class="shelf-section"><h4>Audio</h4><div id="shelf-audios"><div class="shelf-empty">None yet</div></div></div>
+  <div class="shelf-section"><h4>Images</h4><div id="shelf-images"><div class="shelf-empty">None yet</div></div></div>
+  <div class="shelf-section"><h4>Videos</h4><div id="shelf-videos"><div class="shelf-empty">None yet</div></div></div>
+  <div class="shelf-section"><h4>Thumbnails</h4><div id="shelf-thumbs"><div class="shelf-empty">None yet</div></div></div>
+</div>
+
+<div class="wrap">
+
+  <div class="topbar">
+    <div class="brand">
+      <div class="sprockets"><span></span><span></span><span></span></div>
+      <h1>Just Unique <em>Content Lab</em></h1>
+    </div>
+    <button class="btn btn-ghost" id="settingsToggleBtn">API keys</button>
+  </div>
+  <p class="tagline">One studio for script, voice, image, and video. Bring your own API keys, pick your own models.</p>
+
+  <div class="settings-panel" id="settingsPanel">
+    <h3>Your API keys</h3>
+    <p class="settings-note">Stored only in this browser's local storage. Never sent anywhere except straight to each provider when you generate something. If you're building this for customers, each person pastes in their own keys, this app never sees or holds them centrally.</p>
+    <div class="key-grid">
+      <div class="key-field"><label>Anthropic API key</label><input type="text" id="key-anthropic" placeholder="sk-ant-..."></div>
+      <div class="key-field"><label>OpenAI API key</label><input type="text" id="key-openai" placeholder="sk-..."></div>
+      <div class="key-field"><label>Google AI API key</label><input type="text" id="key-google" placeholder="AIza..."></div>
+      <div class="key-field"><label>ElevenLabs API key</label><input type="text" id="key-elevenlabs" placeholder="..."></div>
+      <div class="key-field"><label>Replicate API token</label><input type="text" id="key-replicate" placeholder="r8_..."></div>
+      <div class="key-field"><label>Wavespeed API key, stored but not wired yet</label><input type="text" id="key-wavespeed" placeholder="..."></div>
+      <div class="key-field"><label>Google OAuth Client ID, for Analytics, not secret</label><input type="text" id="key-google-client-id" placeholder="xxxx.apps.googleusercontent.com"></div>
+      <div class="key-field"><label>Facebook App ID, for Analytics, not secret</label><input type="text" id="key-facebook-app-id" placeholder="digits only"></div>
+    </div>
+    <div class="hint">You only need the keys for the tabs you use. Anthropic, OpenAI, or Google, pick any one, for Script and Idea. ElevenLabs for Voice. Replicate for Image and Video. Wavespeed is saved here for when you send me its exact API docs so I can wire it for real instead of guessing.</div>
+    <div style="margin-top:14px;"><button class="btn btn-primary btn-small" id="saveKeysBtn">Save keys</button></div>
+    <div class="provider-status">
+      <strong>Before you rely on this:</strong> Anthropic officially supports calling its API straight from a browser. OpenAI, Google, ElevenLabs, and Replicate may or may not allow that depending on your account and their current policy, I have not verified each one live. If a generate button fails with a network or CORS error, that is why, not a bug in this page. The fix is a small proxy server relaying the request, tell me and I will build it.
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="idea">Idea</button>
+    <button class="tab-btn" data-tab="script">Script</button>
+    <button class="tab-btn" data-tab="voice">Voice</button>
+    <button class="tab-btn" data-tab="image">Image</button>
+    <button class="tab-btn" data-tab="video">Video</button>
+    <button class="tab-btn" data-tab="thumbs">Thumbnails</button>
+    <button class="tab-btn" data-tab="assemble">Assemble</button>
+    <button class="tab-btn" data-tab="analytics">Analytics</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-idea">
+    <div class="panel">
+      <h2>Idea</h2>
+      <p class="desc">Pick a niche and an angle, generate one full concept: a hook, a subtitle, a caption, and how it should be voiced. Everything after this tab pulls from what you generate here.</p>
+      <div class="row">
+        <div>
+          <label class="field-label">Niche</label>
+          <input type="text" id="ideaNiche" list="ideaNicheSuggestions" style="width:100%;" placeholder="Type any niche" value="relationships and love stories">
+          <datalist id="ideaNicheSuggestions">
+            <option value="relationships and love stories">
+            <option value="breakups and divorce stories">
+            <option value="relationship tips and red flags">
+            <option value="true crime">
+            <option value="fraud and scams">
+            <option value="horror and paranormal">
+            <option value="mystery and unsolved cases">
+            <option value="courtroom and legal drama">
+            <option value="family drama">
+            <option value="workplace drama">
+            <option value="revenge stories">
+            <option value="survival stories">
+            <option value="war and military stories">
+            <option value="celebrity and gossip">
+            <option value="history retold">
+            <option value="business and money">
+            <option value="motivation and mindset">
+            <option value="comedy and skits">
+          </datalist>
+        </div>
+        <div>
+          <label class="field-label">Platforms, pick as many as you want</label>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;padding:9px 0;">
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;"><input type="checkbox" class="ideaPlatformCheck" value="TikTok short video" checked> TikTok video</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;"><input type="checkbox" class="ideaPlatformCheck" value="TikTok post"> TikTok post</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;"><input type="checkbox" class="ideaPlatformCheck" value="YouTube Shorts"> YouTube Shorts</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;"><input type="checkbox" class="ideaPlatformCheck" value="YouTube long form video"> YouTube long form</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;"><input type="checkbox" class="ideaPlatformCheck" value="Instagram Reels"> Instagram Reels</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;"><input type="checkbox" class="ideaPlatformCheck" value="Instagram post"> Instagram post</label>
+            <label style="display:flex;align-items:center;gap:5px;font-size:13px;"><input type="checkbox" class="ideaPlatformCheck" value="Facebook"> Facebook</label>
+          </div>
+        </div>
+        <div>
+          <label class="field-label">Tone</label>
+          <select id="ideaTone">
+            <option value="direct and confident">Direct and confident</option>
+            <option value="casual and funny">Casual and funny</option>
+            <option value="calm and authoritative">Calm and authoritative</option>
+            <option value="fast paced and energetic">Fast paced and energetic</option>
+            <option value="emotional and dramatic">Emotional and dramatic</option>
+          </select>
+        </div>
+      </div>
+      <label class="field-label">Custom angle, optional, use this to be specific</label>
+      <input type="text" id="ideaCustom" style="width:100%;" placeholder="e.g. she found out on their anniversary, told through her texts">
+
+      <div class="row">
+        <div>
+          <label class="field-label">Length</label>
+          <select id="ideaLength">
+            <option value="30 to 45 seconds">Short, 30 to 45 sec</option>
+            <option value="60 to 90 seconds" selected>Standard, 60 to 90 sec</option>
+            <option value="3 to 5 minutes">Long form, 3 to 5 min</option>
+            <option value="8 to 15 minutes">Long form, 8 to 15 min</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Number of scenes</label>
+          <select id="ideaSceneCount">
+            <option value="1">1, single shot</option>
+            <option value="3" selected>3</option>
+            <option value="5">5</option>
+            <option value="8">8</option>
+          </select>
+        </div>
+      </div>
+      <div class="hint">There is no API, anywhere, that generates more than a few seconds of continuous AI video per request. A long length here means a longer script and more scenes stitched together deliberately, not one uninterrupted AI shot. Anyone claiming otherwise is not being straight with you.</div>
+
+      <label class="field-label">Characters, optional, describe each one</label>
+      <input type="text" id="ideaCharacters" list="ideaCharacterSuggestions" style="width:100%;" placeholder="e.g. Character A: Black woman, late 20s. Character B: white man, 40s.">
+      <datalist id="ideaCharacterSuggestions">
+        <option value="Black or African American">
+        <option value="African">
+        <option value="Asian">
+        <option value="South Asian">
+        <option value="Latino or Hispanic">
+        <option value="White or Caucasian">
+        <option value="Middle Eastern">
+        <option value="Indigenous">
+        <option value="Mixed race">
+      </datalist>
+      <label class="field-label">Attire, optional</label>
+      <input type="text" id="ideaAttire" list="ideaAttireSuggestions" style="width:100%;" placeholder="e.g. business casual, streetwear, formal suit">
+      <datalist id="ideaAttireSuggestions">
+        <option value="business casual">
+        <option value="formal suit">
+        <option value="streetwear">
+        <option value="casual, jeans and t shirt">
+        <option value="loungewear">
+        <option value="uniform">
+      </datalist>
+      <div class="hint">Keeping the same character looking identical across separate generated scenes is a known limitation of every current image and video model, not something this tool can guarantee. Treat these as strong direction for each shot, not a locked in actor.</div>
+      <div class="row" style="margin-top:6px;">
+        <div>
+          <label class="field-label">Model</label>
+          <select id="ideaModel">
+            <optgroup label="Anthropic">
+              <option value="anthropic:claude-sonnet-5">Claude Sonnet 5</option>
+              <option value="anthropic:claude-opus-5">Claude Opus 5</option>
+              <option value="anthropic:claude-haiku-4-5-20251001">Claude Haiku 4.5</option>
+            </optgroup>
+            <optgroup label="OpenAI">
+              <option value="openai:gpt-4o">GPT-4o</option>
+              <option value="openai:gpt-4o-mini">GPT-4o mini</option>
+            </optgroup>
+            <optgroup label="Google">
+              <option value="google:gemini-2.0-flash">Gemini 2.0 Flash</option>
+            </optgroup>
+          </select>
+        </div>
+        <div style="flex:0;"><button class="btn btn-ghost btn-small" id="refreshIdeaModelsBtn">Refresh models</button></div>
+      </div>
+      <div style="margin-top:14px;"><button class="btn btn-primary" id="generateIdeaBtn">Generate idea</button></div>
+      <div class="error-box" id="ideaError" style="display:none;"></div>
+
+      <div id="ideaResult" style="display:none;margin-top:20px;">
+        <label class="field-label">Hook and concept</label>
+        <textarea id="ideaHook" style="min-height:110px;"></textarea>
+        <label class="field-label">Subtitle</label>
+        <input type="text" id="ideaSubtitle" style="width:100%;">
+        <label class="field-label">Captions, one per platform</label>
+        <div id="ideaCaptions"></div>
+        <label class="field-label">Voice direction</label>
+        <textarea id="ideaVoiceDirection" style="min-height:60px;"></textarea>
+        <div class="hint" id="ideaOriginality"></div>
+        <div class="hint"><strong>On uniqueness:</strong> this checks your hook against only the ideas you have generated before in this tool. No tool anywhere can verify a prompt has never been used by anyone else online, there is no database of that. Be skeptical of any product that claims otherwise.</div>
+
+        <label class="field-label">Scenes</label>
+        <div id="ideaScenes"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-script">
+    <div class="panel">
+      <h2>Script</h2>
+      <p class="desc">Pick a model, describe the video, generate a full script you can edit right here.</p>
+      <div class="row">
+        <div>
+          <label class="field-label">Model</label>
+          <select id="scriptModel">
+            <optgroup label="Anthropic">
+              <option value="anthropic:claude-sonnet-5">Claude Sonnet 5</option>
+              <option value="anthropic:claude-opus-5">Claude Opus 5</option>
+              <option value="anthropic:claude-haiku-4-5-20251001">Claude Haiku 4.5</option>
+            </optgroup>
+            <optgroup label="OpenAI">
+              <option value="openai:gpt-4o">GPT-4o</option>
+              <option value="openai:gpt-4o-mini">GPT-4o mini</option>
+            </optgroup>
+            <optgroup label="Google">
+              <option value="google:gemini-2.0-flash">Gemini 2.0 Flash</option>
+            </optgroup>
+          </select>
+        </div>
+        <div style="flex:0;"><button class="btn btn-ghost btn-small" id="refreshScriptModelsBtn">Refresh models</button></div>
+        <div>
+          <label class="field-label">Tone</label>
+          <select id="toneSelect">
+            <option value="direct and confident">Direct and confident</option>
+            <option value="casual and funny">Casual and funny</option>
+            <option value="calm and authoritative">Calm and authoritative</option>
+            <option value="fast paced and energetic">Fast paced and energetic</option>
+          </select>
+        </div>
+        <div>
+          <label class="field-label">Length</label>
+          <select id="lengthSelect">
+            <option value="30 to 45 seconds when read aloud">Short, 30 to 45 sec</option>
+            <option value="60 to 90 seconds when read aloud" selected>Standard, 60 to 90 sec</option>
+            <option value="2 to 3 minutes when read aloud">Long, 2 to 3 min</option>
+          </select>
+        </div>
+      </div>
+      <div id="scriptIdeaBanner" style="display:none;" class="hint"></div>
+      <label class="field-label">Topic or prompt</label>
+      <textarea id="promptInput" style="min-height:80px;" placeholder="What is this video about? Give it a topic, a hook, a point of view. Generate an idea first and this fills in automatically."></textarea>
+      <div style="margin-top:14px;"><button class="btn btn-primary" id="generateScriptBtn">Generate script</button></div>
+      <label class="field-label">Script</label>
+      <textarea id="scriptOutput" placeholder="Your generated script appears here, fully editable."></textarea>
+      <div class="error-box" id="scriptError" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-voice">
+    <div class="panel">
+      <h2>Voice</h2>
+      <p class="desc">Clone a real voice from a short sample, or generate speech from any voice you've cloned or that's on your ElevenLabs account.</p>
+
+      <h3 style="font-family:'Fraunces',serif;font-size:16px;margin:0 0 10px;">Clone a voice</h3>
+      <label class="field-label">Voice name</label>
+      <input type="text" id="cloneVoiceName" placeholder="e.g. My voice, Client A voice">
+      <label class="field-label">Sample audio, one clean clip of the voice speaking</label>
+      <label class="dropzone" id="cloneDrop">
+        <input type="file" id="cloneInput" accept="audio/*">
+        <div class="dz-label">Click to upload a voice sample</div>
+        <div class="dz-sub">30 seconds or more of clean speech works best</div>
+      </label>
+      <div style="margin-top:12px;"><button class="btn btn-ghost" id="cloneVoiceBtn">Clone this voice</button></div>
+      <div class="error-box" id="cloneError" style="display:none;"></div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:26px 0;">
+
+      <h3 style="font-family:'Fraunces',serif;font-size:16px;margin:0 0 10px;">Generate speech</h3>
+      <div class="row">
+        <div>
+          <label class="field-label">Voice</label>
+          <select id="ttsVoiceSelect"><option value="">Load voices first</option></select>
+        </div>
+        <div>
+          <label class="field-label">Model</label>
+          <select id="ttsModelSelect">
+            <option value="eleven_multilingual_v2">Eleven Multilingual v2</option>
+            <option value="eleven_turbo_v2_5">Eleven Turbo v2.5</option>
+            <option value="eleven_flash_v2_5">Eleven Flash v2.5</option>
+          </select>
+        </div>
+        <div style="flex:0;"><button class="btn btn-ghost btn-small" id="loadVoicesBtn">Refresh voices</button></div>
+      </div>
+      <label class="field-label">Text to speak</label>
+      <textarea id="ttsText" style="min-height:120px;" placeholder="Uses your script by default, or paste anything here."></textarea>
+      <div style="margin-top:12px;"><button class="btn btn-primary" id="generateAudioBtn">Generate audio</button></div>
+      <div class="error-box" id="ttsError" style="display:none;"></div>
+      <div class="runner-output" id="ttsOutput"></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-image">
+    <div class="panel">
+      <h2>Image</h2>
+      <p class="desc">Runs any model on Replicate. Type a prompt to generate an image from scratch, or upload a reference image to recreate or restyle it.</p>
+      <label class="field-label">Replicate model, owner slash name</label>
+      <input type="text" id="imgModel" list="imgModelSuggestions" placeholder="e.g. black-forest-labs/flux-schnell" style="width:100%;">
+      <datalist id="imgModelSuggestions">
+        <option value="black-forest-labs/flux-schnell">
+        <option value="black-forest-labs/flux-dev">
+        <option value="stability-ai/stable-diffusion-3.5-large">
+      </datalist>
+      <div class="hint">Suggestions only, not verified for your account. Browse replicate.com/explore for current models and their exact input fields.</div>
+
+      <label class="field-label">Prompt</label>
+      <textarea id="imgPrompt" style="min-height:80px;" placeholder="Describe the image. For recreating a person or reference, describe what should change or stay the same."></textarea>
+
+      <label class="field-label">Reference image, optional, used for image to image or face based recreation</label>
+      <label class="dropzone" id="imgRefDrop">
+        <input type="file" id="imgRefInput" accept="image/*">
+        <div class="dz-label">Click to upload a reference image</div>
+        <div class="dz-sub">Sent to the model as its "image" input field by default</div>
+      </label>
+
+      <details>
+        <summary>Advanced, raw JSON input override</summary>
+        <textarea id="imgAdvanced" style="min-height:70px;margin-top:8px;" placeholder='{"strength": 0.6, "num_outputs": 1}'></textarea>
+        <div class="hint">Merged into the request. Use this for any field a specific model needs that is not prompt or image, check that model's own page on Replicate for its exact schema.</div>
+      </details>
+
+      <label class="field-label">Mode</label>
+      <select id="imgMode">
+        <option value="image">Clone image only</option>
+        <option value="image_voice">Clone image with voice</option>
+        <option value="image_video">Clone image and create video</option>
+      </select>
+      <div class="hint">Voice and video modes reuse whatever voice you picked in the Voice tab.</div>
+      <div style="margin-top:14px;"><button class="btn btn-primary" id="generateImageBtn">Generate image</button></div>
+      <div class="error-box" id="imgError" style="display:none;"></div>
+      <div class="runner-output" id="imgOutput"></div>
+      <div class="hint" style="margin-top:16px;"><strong>Using a real person's face:</strong> some platforms and some jurisdictions restrict recreating a specific real person's likeness without consent. Worth checking before you build a paid feature around it.</div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-video">
+    <div class="panel">
+      <h2>Video</h2>
+      <p class="desc">Generate video from a prompt through Replicate, or compose a real video in your browser from images and audio you already have, no external service needed for that part.</p>
+
+      <h3 style="font-family:'Fraunces',serif;font-size:16px;margin:0 0 10px;">Prompt to video</h3>
+      <label class="field-label">Provider</label>
+      <select id="vidProvider">
+        <option value="replicate">Replicate, any model slug</option>
+        <option value="veo">Google Veo 3, uses your Google key</option>
+      </select>
+      <div id="vidReplicateFields">
+      <label class="field-label">Replicate model, owner slash name</label>
+      <input type="text" id="vidModel" list="vidModelSuggestions" placeholder="e.g. minimax/video-01" style="width:100%;">
+      <datalist id="vidModelSuggestions">
+        <option value="minimax/video-01">
+        <option value="kwaivgi/kling-v1.6-standard">
+      </datalist>
+      <div class="hint">Suggestions only, not verified for your account. Confirm the current slug on replicate.com/explore.</div>
+      </div>
+      <div id="vidVeoFields" style="display:none;">
+        <label class="field-label">Aspect ratio</label>
+        <select id="vidVeoAspect">
+          <option value="9:16">Vertical, 9:16</option>
+          <option value="16:9">Horizontal, 16:9</option>
+        </select>
+        <div class="hint">Paid tier only on your Google account. Priced per second of video, videos usually take a minute or more to render, this page will wait and poll for it.</div>
+      </div>
+      <label class="field-label">Prompt</label>
+      <textarea id="vidPrompt" style="min-height:70px;" placeholder="Describe the shot, motion, and mood."></textarea>
+      <details>
+        <summary>Advanced, raw JSON input override</summary>
+        <textarea id="vidAdvanced" style="min-height:70px;margin-top:8px;" placeholder='{"duration": 5}'></textarea>
+      </details>
+      <div style="margin-top:14px;"><button class="btn btn-primary" id="generateVideoBtn">Generate video</button></div>
+      <div class="error-box" id="vidError" style="display:none;"></div>
+      <div class="runner-output" id="vidOutput"></div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:26px 0;">
+
+      <h3 style="font-family:'Fraunces',serif;font-size:16px;margin:0 0 10px;">Compose from images and audio, no API needed</h3>
+      <p class="desc" style="margin-bottom:12px;">Turns everything already on your shelf into one video, right in this browser.</p>
+      <div class="row">
+        <div>
+          <label class="field-label">Audio track</label>
+          <select id="composeAudioSelect"><option value="">Add audio in the Voice tab first</option></select>
+        </div>
+        <div>
+          <label class="field-label">Orientation</label>
+          <select id="composeOrientation">
+            <option value="vertical">Vertical, 9:16</option>
+            <option value="horizontal">Horizontal, 16:9</option>
+            <option value="square">Square, 1:1</option>
+          </select>
+        </div>
+      </div>
+      <div class="hint">Uses every image currently on your shelf, in the order they were added, split evenly across the audio's length.</div>
+      <div style="margin-top:12px;"><button class="btn btn-primary" id="composeBtn">Compose video from shelf</button></div>
+      <div class="error-box" id="composeError" style="display:none;"></div>
+      <div class="runner-output" id="composeOutput"></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-thumbs">
+    <div class="panel">
+      <h2>Thumbnails</h2>
+      <p class="desc">Upload the cover images once, they travel with the final export and stay attached to the project, no re-uploading before every publish.</p>
+      <div class="assembly-grid">
+        <div>
+          <label class="field-label">YouTube thumbnail, 1280 by 720 recommended</label>
+          <label class="dropzone" id="ytThumbDrop">
+            <input type="file" id="ytThumbInput" accept="image/*">
+            <div class="dz-label">Click to upload YouTube thumbnail</div>
+          </label>
+        </div>
+        <div>
+          <label class="field-label">Instagram cover, 1080 by 1920 for reels</label>
+          <label class="dropzone" id="igThumbDrop">
+            <input type="file" id="igThumbInput" accept="image/*">
+            <div class="dz-label">Click to upload Instagram cover</div>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-assemble">
+    <div class="panel">
+      <h2>Assemble</h2>
+      <p class="desc">Everything you've built lives on the shelf. Export it all as one package.</p>
+      <div id="assembleSummary"></div>
+      <div style="margin-top:16px;"><button class="btn btn-primary" id="exportZipBtn">Download production package, .zip</button></div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-analytics">
+    <div class="panel">
+      <h2>Analytics</h2>
+      <p class="desc">This never posts anything for you. You export the video, upload it yourself on each platform. Connect your accounts here once so you can see how everything is doing without leaving this page.</p>
+
+      <div class="publish-grid">
+        <div class="platform-card">
+          <h4>YouTube</h4>
+          <div id="ytConnectStatus" class="hint">Not connected</div>
+          <button class="btn btn-primary btn-small" id="connectYoutubeBtn" style="margin-top:8px;">Connect YouTube</button>
+          <div id="ytStats" style="margin-top:10px;"></div>
+        </div>
+        <div class="platform-card">
+          <h4>Facebook and Instagram</h4>
+          <div id="fbConnectStatus" class="hint">Not connected</div>
+          <button class="btn btn-primary btn-small" id="connectFacebookBtn" style="margin-top:8px;">Connect Facebook</button>
+          <div id="fbStats" style="margin-top:10px;"></div>
+          <div class="hint" style="margin-top:8px;">Instagram numbers only show up if the Instagram account is a professional account linked to the Facebook Page you connect.</div>
+        </div>
+        <div class="platform-card">
+          <h4>TikTok</h4>
+          <div class="hint">TikTok's login flow needs a small server component to exchange the login code securely, unlike YouTube and Facebook which can run straight from this page. This one comes after the other two are working for you.</div>
+        </div>
+      </div>
+
+      <div class="hint" style="margin-top:16px;"><strong>Being straight about token life:</strong> YouTube connections here can refresh themselves quietly. Facebook connections use a short lived login for now, expect to reconnect it every so often rather than once and forget, a longer lived connection needs a small server piece, same one TikTok needs, and is a natural next step once you want it.</div>
+    </div>
+  </div>
+
+  <footer>Built © 2026 Just Unique. All rights reserved.</footer>
+</div>
+
+<script>
+  const state = {
+    script:'',
+    idea:null,
+    shelf:{ voices:[], audios:[], images:[], videos:[], thumbs:{ youtube:null, instagram:null } }
+  };
+  const $ = id => document.getElementById(id);
+
+  function getKeys(){
+    return {
+      anthropic: localStorage.getItem('rf_key_anthropic') || '',
+      openai: localStorage.getItem('rf_key_openai') || '',
+      google: localStorage.getItem('rf_key_google') || '',
+      elevenlabs: localStorage.getItem('rf_key_elevenlabs') || '',
+      replicate: localStorage.getItem('rf_key_replicate') || '',
+      wavespeed: localStorage.getItem('rf_key_wavespeed') || '',
+      googleClientId: localStorage.getItem('rf_key_google_client_id') || '',
+      facebookAppId: localStorage.getItem('rf_key_facebook_app_id') || ''
+    };
+  }
+  function loadKeysIntoFields(){
+    const k = getKeys();
+    $('key-anthropic').value = k.anthropic;
+    $('key-openai').value = k.openai;
+    $('key-google').value = k.google;
+    $('key-elevenlabs').value = k.elevenlabs;
+    $('key-replicate').value = k.replicate;
+    $('key-wavespeed').value = k.wavespeed;
+    $('key-google-client-id').value = k.googleClientId;
+    $('key-facebook-app-id').value = k.facebookAppId;
+  }
+  $('saveKeysBtn').addEventListener('click', () => {
+    localStorage.setItem('rf_key_anthropic', $('key-anthropic').value.trim());
+    localStorage.setItem('rf_key_openai', $('key-openai').value.trim());
+    localStorage.setItem('rf_key_google', $('key-google').value.trim());
+    localStorage.setItem('rf_key_elevenlabs', $('key-elevenlabs').value.trim());
+    localStorage.setItem('rf_key_replicate', $('key-replicate').value.trim());
+    localStorage.setItem('rf_key_wavespeed', $('key-wavespeed').value.trim());
+    localStorage.setItem('rf_key_google_client_id', $('key-google-client-id').value.trim());
+    localStorage.setItem('rf_key_facebook_app_id', $('key-facebook-app-id').value.trim());
+    $('saveKeysBtn').textContent = 'Saved';
+    setTimeout(() => { $('saveKeysBtn').textContent = 'Save keys'; }, 1400);
+    if($('key-elevenlabs').value.trim()) populateVoiceSelect();
+  });
+  $('settingsToggleBtn').addEventListener('click', () => $('settingsPanel').classList.toggle('open'));
+  loadKeysIntoFields();
+
+  const TAB_ORDER = ['idea','script','voice','image','video','thumbs','assemble','analytics'];
+  function goToNextTab(currentTab){
+    const idx = TAB_ORDER.indexOf(currentTab);
+    if(idx === -1 || idx === TAB_ORDER.length - 1) return;
+    document.querySelector('.tab-btn[data-tab="'+TAB_ORDER[idx+1]+'"]').click();
+  }
+  document.querySelectorAll('.panel').forEach(panel => {
+    const tabPanel = panel.closest('.tab-panel');
+    if(!tabPanel) return;
+    const tabName = tabPanel.id.replace('tab-','');
+    if(tabName === 'analytics') return;
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'btn btn-ghost btn-small';
+    nextBtn.textContent = 'Next';
+    nextBtn.style.marginTop = '20px';
+    nextBtn.addEventListener('click', () => goToNextTab(tabName));
+    panel.appendChild(nextBtn);
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      $('tab-' + btn.dataset.tab).classList.add('active');
+    });
+  });
+
+  $('shelfToggleBtn').addEventListener('click', () => $('shelf').classList.toggle('open'));
+
+  function renderShelf(){
+    const s = state.shelf;
+    renderShelfList('shelf-voices', s.voices.map(v => ({label:v.name, remove:() => { s.voices = s.voices.filter(x=>x!==v); renderShelf(); populateVoiceSelect(); }})));
+    renderShelfList('shelf-audios', s.audios.map(a => ({label:a.name, remove:() => { s.audios = s.audios.filter(x=>x!==a); renderShelf(); populateComposeAudioSelect(); }})));
+    renderShelfList('shelf-images', s.images.map(im => ({label:im.name, thumb:im.url, remove:() => { s.images = s.images.filter(x=>x!==im); renderShelf(); }})));
+    renderShelfList('shelf-videos', s.videos.map(v => ({label:v.name, remove:() => { s.videos = s.videos.filter(x=>x!==v); renderShelf(); }})));
+    const thumbItems = [];
+    if(s.thumbs.youtube) thumbItems.push({label:'YouTube cover', thumb:s.thumbs.youtube.url, remove:() => { s.thumbs.youtube=null; renderShelf(); }});
+    if(s.thumbs.instagram) thumbItems.push({label:'Instagram cover', thumb:s.thumbs.instagram.url, remove:() => { s.thumbs.instagram=null; renderShelf(); }});
+    renderShelfList('shelf-thumbs', thumbItems);
+    renderAssembleSummary();
+  }
+
+  function renderShelfList(containerId, items){
+    const el = $(containerId);
+    if(items.length === 0){ el.innerHTML = '<div class="shelf-empty">None yet</div>'; return; }
+    el.innerHTML = '';
+    items.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'shelf-item';
+      row.innerHTML = (item.thumb ? '<img src="'+item.thumb+'">' : '') + '<span class="name">'+item.label+'</span>';
+      const removeBtn = document.createElement('button');
+      removeBtn.textContent = '\u00d7';
+      removeBtn.addEventListener('click', item.remove);
+      row.appendChild(removeBtn);
+      el.appendChild(row);
+    });
+  }
+
+  async function callAnthropic(model, systemPrompt, userPrompt){
+    const key = getKeys().anthropic;
+    if(!key) throw new Error('Add your Anthropic key in API keys first.');
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': key,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
+      body: JSON.stringify({ model, max_tokens:4096, system:systemPrompt, messages:[{role:'user', content:userPrompt}] })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error((data.error && data.error.message) || 'Anthropic request failed');
+    return (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();
+  }
+
+  async function callOpenAI(model, systemPrompt, userPrompt){
+    const key = getKeys().openai;
+    if(!key) throw new Error('Add your OpenAI key in API keys first.');
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+key },
+      body: JSON.stringify({ model, messages:[{role:'system',content:systemPrompt},{role:'user',content:userPrompt}] })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error((data.error && data.error.message) || 'OpenAI request failed');
+    return data.choices[0].message.content.trim();
+  }
+
+  async function callGoogle(model, systemPrompt, userPrompt){
+    const key = getKeys().google;
+    if(!key) throw new Error('Add your Google AI key in API keys first.');
+    const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+key, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts:[{ text: systemPrompt }] },
+        contents: [{ role:'user', parts:[{ text: userPrompt }] }]
+      })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error((data.error && data.error.message) || 'Google request failed');
+    const cand = data.candidates && data.candidates[0];
+    const text = cand && cand.content && cand.content.parts ? cand.content.parts.map(p => p.text || '').join('') : '';
+    if(!text) throw new Error('Google returned an empty response.');
+    return text.trim();
+  }
+
+  function callScriptModel(fullValue, systemPrompt, userPrompt){
+    const [provider, model] = fullValue.split(':');
+    if(provider === 'anthropic') return callAnthropic(model, systemPrompt, userPrompt);
+    if(provider === 'google') return callGoogle(model, systemPrompt, userPrompt);
+    return callOpenAI(model, systemPrompt, userPrompt);
+  }
+
+  async function refreshModelOptions(selectId){
+    const sel = $(selectId);
+    const keys = getKeys();
+    let anthropicOpts = [];
+    let openaiOpts = [];
+    let googleOpts = [];
+    try{
+      if(keys.anthropic){
+        const res = await fetch('https://api.anthropic.com/v1/models', { headers:{ 'x-api-key': keys.anthropic, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' } });
+        const data = await res.json();
+        if(res.ok){ anthropicOpts = (data.data||[]).map(m => ({ value:'anthropic:'+m.id, label:m.display_name || m.id })); }
+      }
+    }catch(e){}
+    try{
+      if(keys.openai){
+        const res = await fetch('https://api.openai.com/v1/models', { headers:{ 'Authorization':'Bearer '+keys.openai } });
+        const data = await res.json();
+        if(res.ok){ openaiOpts = (data.data||[]).filter(m => /gpt/.test(m.id)).map(m => ({ value:'openai:'+m.id, label:m.id })); }
+      }
+    }catch(e){}
+    try{
+      if(keys.google){
+        const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models?key='+keys.google);
+        const data = await res.json();
+        if(res.ok){ googleOpts = (data.models||[]).filter(m => /generateContent/.test((m.supportedGenerationMethods||[]).join(','))).map(m => ({ value:'google:'+m.name.replace('models/',''), label:m.displayName || m.name })); }
+      }
+    }catch(e){}
+    if(anthropicOpts.length === 0 && openaiOpts.length === 0 && googleOpts.length === 0){
+      alert('Could not load live models, add at least one of Anthropic, OpenAI, or Google key first. Keeping the current list.');
+      return;
+    }
+    let html = '';
+    if(anthropicOpts.length){ html += '<optgroup label="Anthropic">' + anthropicOpts.map(o => '<option value="'+o.value+'">'+o.label+'</option>').join('') + '</optgroup>'; }
+    if(openaiOpts.length){ html += '<optgroup label="OpenAI">' + openaiOpts.map(o => '<option value="'+o.value+'">'+o.label+'</option>').join('') + '</optgroup>'; }
+    if(googleOpts.length){ html += '<optgroup label="Google">' + googleOpts.map(o => '<option value="'+o.value+'">'+o.label+'</option>').join('') + '</optgroup>'; }
+    sel.innerHTML = html;
+  }
+  $('refreshScriptModelsBtn').addEventListener('click', () => refreshModelOptions('scriptModel'));
+  $('refreshIdeaModelsBtn').addEventListener('click', () => refreshModelOptions('ideaModel'));
+
+  function extractJSON(raw){
+    let text = (raw || '').trim();
+    text = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/,'').trim();
+    try{ return JSON.parse(text); }catch(e){}
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if(start !== -1 && end !== -1 && end > start){
+      try{ return JSON.parse(text.slice(start, end+1)); }catch(e){}
+    }
+    throw new Error('Could not read that as JSON. What came back started with: ' + text.slice(0,140));
+  }
+
+  function wordOverlapRatio(a, b){
+    const wa = new Set(a.toLowerCase().split(/\W+/).filter(w => w.length > 3));
+    const wb = new Set(b.toLowerCase().split(/\W+/).filter(w => w.length > 3));
+    if(wa.size === 0) return 0;
+    let shared = 0;
+    wa.forEach(w => { if(wb.has(w)) shared++; });
+    return shared / wa.size;
+  }
+
+  function checkOriginalityAndStore(hookText){
+    const past = JSON.parse(localStorage.getItem('rf_past_hooks') || '[]');
+    let maxOverlap = 0;
+    past.forEach(h => { const r = wordOverlapRatio(hookText, h); if(r > maxOverlap) maxOverlap = r; });
+    past.push(hookText);
+    while(past.length > 200) past.shift();
+    localStorage.setItem('rf_past_hooks', JSON.stringify(past));
+    if(maxOverlap > 0.55){
+      return '<strong style="color:var(--danger);">Similar to an idea you made before in this tool.</strong> Try a more specific custom angle.';
+    }
+    return '<strong style="color:var(--success);">Different from every idea you have generated here before.</strong>';
+  }
+
+  function renderIdeaScenes(scenes){
+    const el = $('ideaScenes');
+    if(!scenes || scenes.length === 0){ el.innerHTML = '<div class="hint">No scenes returned.</div>'; return; }
+    el.innerHTML = '';
+    scenes.forEach(sc => {
+      const card = document.createElement('div');
+      card.className = 'asset-card';
+      card.style.marginBottom = '10px';
+      const desc = 'Scene ' + sc.scene_number + '. Setting: ' + (sc.setting||'') + '. Characters: ' + (sc.characters_present||'') + '. Action: ' + (sc.action||'') + (sc.dialogue_line ? '. Line: ' + sc.dialogue_line : '');
+      card.innerHTML = '<h4>Scene ' + sc.scene_number + '</h4><div style="font-size:13px;color:var(--text);margin-bottom:8px;">' + desc.replace(/</g,'&lt;') + '</div>';
+      const useImgBtn = document.createElement('button');
+      useImgBtn.className = 'btn btn-ghost btn-small';
+      useImgBtn.textContent = 'Use in Image tab';
+      useImgBtn.style.marginRight = '8px';
+      useImgBtn.addEventListener('click', () => {
+        $('imgPrompt').value = desc;
+        document.querySelector('.tab-btn[data-tab="image"]').click();
+      });
+      const useVidBtn = document.createElement('button');
+      useVidBtn.className = 'btn btn-ghost btn-small';
+      useVidBtn.textContent = 'Use in Video tab';
+      useVidBtn.addEventListener('click', () => {
+        $('vidPrompt').value = desc;
+        document.querySelector('.tab-btn[data-tab="video"]').click();
+      });
+      card.appendChild(useImgBtn);
+      card.appendChild(useVidBtn);
+      el.appendChild(card);
+    });
+  }
+
+  $('generateIdeaBtn').addEventListener('click', async () => {
+    const errBox = $('ideaError');
+    errBox.style.display = 'none';
+    const niche = $('ideaNiche').value.trim() || 'general';
+    const angle = $('ideaCustom').value.trim();
+    const platforms = Array.from(document.querySelectorAll('.ideaPlatformCheck:checked')).map(el => el.value);
+    if(platforms.length === 0){ errBox.textContent = 'Pick at least one platform.'; errBox.style.display='block'; return; }
+    const tone = $('ideaTone').value;
+    const length = $('ideaLength').value;
+    const sceneCount = $('ideaSceneCount').value;
+    const characters = $('ideaCharacters').value.trim();
+    const attire = $('ideaAttire').value.trim();
+    const systemPrompt = 'You create unique, scroll stopping short form video concepts. Given a niche, an optional specific angle, a tone, a list of target platforms, a length, character descriptions, and attire, invent one concept with a strong opening hook that feels fresh rather than a common recycled framing. Respond only with valid JSON, no markdown, no commentary, using exactly these keys: hook, subtitle, captions, voice_direction, scenes. hook is the actual opening line the video would start with, followed by one sentence describing where the story goes. subtitle is under twelve words. captions is an array with one object per platform given, each with keys platform and caption, where caption is two to four sentences ready to post on that specific platform, matching that platform\'s usual style, ending with two to four relevant hashtags. voice_direction describes how it should be voiced, for example the gender of the voice, pacing, and emphasis. scenes is an array with exactly ' + sceneCount + ' objects, each with keys scene_number, setting, characters_present, action, dialogue_line, describing that shot in enough visual detail to generate an image or video from it directly, and respecting any character or attire descriptions given.';
+    const userPrompt = 'Niche: ' + niche + '. Specific angle: ' + (angle || 'none given, invent one') + '. Tone: ' + tone + '. Platforms: ' + platforms.join(', ') + '. Length: ' + length + '. Characters: ' + (characters || 'not specified, invent appropriate ones') + '. Attire: ' + (attire || 'not specified, invent appropriate attire') + '.';
+    const btn = $('generateIdeaBtn');
+    btn.disabled = true; btn.textContent = 'Generating...';
+    try{
+      const raw = await callScriptModel($('ideaModel').value, systemPrompt, userPrompt);
+      const idea = extractJSON(raw);
+      state.idea = idea;
+      $('ideaResult').style.display = 'block';
+      $('ideaHook').value = idea.hook || '';
+      $('ideaSubtitle').value = idea.subtitle || '';
+      $('ideaCaptions').innerHTML = (idea.captions || []).map(c =>
+        '<div class="asset-card" style="margin-bottom:8px;"><h4>' + (c.platform||'').replace(/</g,'&lt;') + '</h4><div style="font-size:13.5px;white-space:pre-wrap;">' + (c.caption||'').replace(/</g,'&lt;') + '</div></div>'
+      ).join('') || '<div class="hint">No captions returned.</div>';
+      $('ideaVoiceDirection').value = idea.voice_direction || '';
+      $('ideaOriginality').innerHTML = checkOriginalityAndStore(idea.hook || '');
+      renderIdeaScenes(idea.scenes);
+      $('promptInput').value = idea.hook || '';
+      $('scriptIdeaBanner').style.display = 'block';
+      $('scriptIdeaBanner').innerHTML = '<strong>Using your idea:</strong> ' + (idea.subtitle || '') + '. Edit the topic below if you want to change direction.';
+    }catch(err){
+      errBox.textContent = err.message;
+      errBox.style.display = 'block';
+    }finally{
+      btn.disabled = false; btn.textContent = 'Generate idea';
+    }
+  });
+
+  $('generateScriptBtn').addEventListener('click', async () => {
+    const topic = $('promptInput').value.trim();
+    if(!topic){ alert('Add a topic or prompt first.'); return; }
+    const tone = $('toneSelect').value;
+    const length = $('lengthSelect').value;
+    const systemPrompt = 'You write short form video scripts for social content. Write a complete script for the topic given, in a '+tone+' tone, timed for '+length+'. Structure it with a hook line, the body broken into short spoken lines, and a closing line. Include bracketed on screen text or visual cues next to relevant lines. Only output the script, no preamble, no markdown.';
+    const btn = $('generateScriptBtn');
+    const errBox = $('scriptError');
+    errBox.style.display = 'none';
+    btn.disabled = true; btn.textContent = 'Writing...';
+    try{
+      const text = await callScriptModel($('scriptModel').value, systemPrompt, topic);
+      state.script = text;
+      $('scriptOutput').value = text;
+      $('ttsText').value = text;
+    }catch(err){
+      errBox.textContent = err.message;
+      errBox.style.display = 'block';
+    }finally{
+      btn.disabled = false; btn.textContent = 'Generate script';
+      renderShelf();
+    }
+  });
+  $('scriptOutput').addEventListener('input', e => { state.script = e.target.value; });
+
+  $('cloneInput').addEventListener('change', e => {
+    if(e.target.files[0]){
+      $('cloneDrop').classList.add('filled');
+      $('cloneDrop').querySelector('.dz-label').textContent = e.target.files[0].name;
+    }
+  });
+
+  $('cloneVoiceBtn').addEventListener('click', async () => {
+    const key = getKeys().elevenlabs;
+    const errBox = $('cloneError');
+    errBox.style.display = 'none';
+    const name = $('cloneVoiceName').value.trim();
+    const file = $('cloneInput').files[0];
+    if(!key){ errBox.textContent = 'Add your ElevenLabs key in API keys first.'; errBox.style.display='block'; return; }
+    if(!name || !file){ errBox.textContent = 'Give the voice a name and upload a sample first.'; errBox.style.display='block'; return; }
+    const btn = $('cloneVoiceBtn');
+    btn.disabled = true; btn.textContent = 'Cloning...';
+    try{
+      const form = new FormData();
+      form.append('name', name);
+      form.append('files', file);
+      const res = await fetch('https://api.elevenlabs.io/v1/voices/add', { method:'POST', headers:{ 'xi-api-key': key }, body: form });
+      const data = await res.json();
+      if(!res.ok) throw new Error((data.detail && (data.detail.message || JSON.stringify(data.detail))) || 'Voice cloning failed');
+      state.shelf.voices.push({ name: name, voice_id: data.voice_id });
+      localStorage.setItem('rf_cloned_voices', JSON.stringify(state.shelf.voices));
+      renderShelf();
+      await populateVoiceSelect();
+      $('cloneVoiceName').value = '';
+    }catch(err){
+      errBox.textContent = err.message;
+      errBox.style.display = 'block';
+    }finally{
+      btn.disabled = false; btn.textContent = 'Clone this voice';
+    }
+  });
+
+  async function populateVoiceSelect(){
+    const key = getKeys().elevenlabs;
+    const sel = $('ttsVoiceSelect');
+    if(!key){ sel.innerHTML = '<option value="">Add your ElevenLabs key first</option>'; return; }
+    try{
+      const res = await fetch('https://api.elevenlabs.io/v1/voices', { headers:{ 'xi-api-key': key } });
+      const data = await res.json();
+      if(!res.ok) throw new Error('Could not load voices');
+      sel.innerHTML = '';
+      (data.voices||[]).forEach(v => {
+        const opt = document.createElement('option');
+        opt.value = v.voice_id; opt.textContent = v.name;
+        sel.appendChild(opt);
+      });
+    }catch(err){
+      sel.innerHTML = '<option value="">'+err.message+'</option>';
+    }
+  }
+  $('loadVoicesBtn').addEventListener('click', populateVoiceSelect);
+
+  async function generateVoiceoverNow(){
+    const key = getKeys().elevenlabs;
+    const voiceId = $('ttsVoiceSelect').value;
+    const text = $('ttsText').value.trim() || state.script;
+    const modelId = $('ttsModelSelect').value;
+    if(!key) throw new Error('Add your ElevenLabs key in API keys first.');
+    if(!voiceId) throw new Error('Pick a voice in the Voice tab first, clone one or refresh the list.');
+    if(!text) throw new Error('Nothing to speak, generate a script or idea first.');
+    const res = await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+voiceId, {
+      method:'POST',
+      headers:{ 'xi-api-key': key, 'Content-Type':'application/json', 'Accept':'audio/mpeg' },
+      body: JSON.stringify({ text, model_id: modelId })
+    });
+    if(!res.ok){
+      const errData = await res.json().catch(()=>({}));
+      throw new Error((errData.detail && (errData.detail.message || JSON.stringify(errData.detail))) || 'Audio generation failed');
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const name = 'voiceover-'+Date.now()+'.mp3';
+    const asset = { name, url, blob };
+    state.shelf.audios.push(asset);
+    renderShelf();
+    populateComposeAudioSelect();
+    return asset;
+  }
+
+  $('generateAudioBtn').addEventListener('click', async () => {
+    const errBox = $('ttsError');
+    errBox.style.display = 'none';
+    const btn = $('generateAudioBtn');
+    btn.disabled = true; btn.textContent = 'Generating...';
+    try{
+      const asset = await generateVoiceoverNow();
+      $('ttsOutput').innerHTML = '<audio controls src="'+asset.url+'" style="width:100%;"></audio>';
+    }catch(err){
+      errBox.textContent = err.message;
+      errBox.style.display = 'block';
+    }finally{
+      btn.disabled = false; btn.textContent = 'Generate audio';
+    }
+  });
+
+  function fileToDataURL(file){
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function runReplicate(modelSlug, input){
+    const key = getKeys().replicate;
+    if(!key) throw new Error('Add your Replicate token in API keys first.');
+    if(!modelSlug || !modelSlug.includes('/')) throw new Error('Enter a model as owner/name, for example black-forest-labs/flux-schnell.');
+    const createRes = await fetch('https://api.replicate.com/v1/models/'+modelSlug+'/predictions', {
+      method:'POST',
+      headers:{ 'Authorization':'Bearer '+key, 'Content-Type':'application/json', 'Prefer':'wait=30' },
+      body: JSON.stringify({ input })
+    });
+    let prediction = await createRes.json();
+    if(!createRes.ok) throw new Error(prediction.detail || 'Replicate request failed, check the model slug and your token.');
+
+    let attempts = 0;
+    while(prediction.status !== 'succeeded' && prediction.status !== 'failed' && prediction.status !== 'canceled' && attempts < 60){
+      await new Promise(r => setTimeout(r, 2000));
+      const pollRes = await fetch(prediction.urls.get, { headers:{ 'Authorization':'Bearer '+key } });
+      prediction = await pollRes.json();
+      attempts++;
+    }
+    if(prediction.status !== 'succeeded') throw new Error('Generation did not succeed, status: ' + prediction.status);
+    return prediction.output;
+  }
+
+  $('imgRefInput').addEventListener('change', e => {
+    if(e.target.files[0]){
+      $('imgRefDrop').classList.add('filled');
+      $('imgRefDrop').querySelector('.dz-label').textContent = e.target.files[0].name;
+    }
+  });
+
+  $('generateImageBtn').addEventListener('click', async () => {
+    const errBox = $('imgError');
+    errBox.style.display = 'none';
+    const modelSlug = $('imgModel').value.trim();
+    const prompt = $('imgPrompt').value.trim();
+    const mode = $('imgMode').value;
+    if(!prompt){ errBox.textContent = 'Write a prompt first.'; errBox.style.display='block'; return; }
+    const btn = $('generateImageBtn');
+    btn.disabled = true; btn.textContent = 'Generating...';
+    try{
+      let input = { prompt };
+      const refFile = $('imgRefInput').files[0];
+      if(refFile) input.image = await fileToDataURL(refFile);
+      const advancedRaw = $('imgAdvanced').value.trim();
+      if(advancedRaw){ input = Object.assign(input, JSON.parse(advancedRaw)); }
+      const output = await runReplicate(modelSlug, input);
+      const imageUrl = Array.isArray(output) ? output[0] : output;
+      $('imgOutput').innerHTML = '<img src="'+imageUrl+'">';
+      const imageAsset = { name:'image-'+Date.now()+'.png', url:imageUrl };
+      state.shelf.images.push(imageAsset);
+      renderShelf();
+
+      if(mode === 'image_voice' || mode === 'image_video'){
+        btn.textContent = 'Generating voice...';
+        const audioAsset = await generateVoiceoverNow();
+        if(mode === 'image_video'){
+          btn.textContent = 'Composing video...';
+          await composeImagesAndAudioToVideo([imageAsset], audioAsset, $('composeOrientation').value || 'vertical');
+        }
+      }
+    }catch(err){
+      errBox.textContent = err.message;
+      errBox.style.display = 'block';
+    }finally{
+      btn.disabled = false; btn.textContent = 'Generate image';
+    }
+  });
+
+  $('vidProvider').addEventListener('change', () => {
+    const isVeo = $('vidProvider').value === 'veo';
+    $('vidReplicateFields').style.display = isVeo ? 'none' : 'block';
+    $('vidVeoFields').style.display = isVeo ? 'block' : 'none';
+  });
+
+  async function callVeoVideo(prompt, aspectRatio, onProgress){
+    const key = getKeys().google;
+    if(!key) throw new Error('Add your Google AI key in API keys first.');
+    const createRes = await fetch('https://generativelanguage.googleapis.com/v1beta/models/veo-3.0-generate-preview:predictLongRunning', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'x-goog-api-key': key },
+      body: JSON.stringify({ instances:[{ prompt: prompt, aspectRatio: aspectRatio }] })
+    });
+    let op = await createRes.json();
+    if(!createRes.ok) throw new Error((op.error && op.error.message) || 'Veo request failed, check that your Google account has paid tier access.');
+    let attempts = 0;
+    while(!op.done && attempts < 120){
+      if(onProgress) onProgress(attempts);
+      await new Promise(r => setTimeout(r, 3000));
+      const pollRes = await fetch('https://generativelanguage.googleapis.com/v1beta/' + op.name, { headers:{ 'x-goog-api-key': key } });
+      op = await pollRes.json();
+      attempts++;
+    }
+    if(!op.done) throw new Error('Veo did not finish in time, try again in a moment.');
+    const sample = op.response && op.response.generateVideoResponse && op.response.generateVideoResponse.generatedSamples && op.response.generateVideoResponse.generatedSamples[0];
+    if(!sample) throw new Error('Veo finished but returned no video, ' + JSON.stringify(op).slice(0,160));
+    const videoRes = await fetch(sample.video.uri, { headers:{ 'x-goog-api-key': key } });
+    if(!videoRes.ok) throw new Error('Could not download the finished video from Google.');
+    return await videoRes.blob();
+  }
+
+  $('generateVideoBtn').addEventListener('click', async () => {
+    const errBox = $('vidError');
+    errBox.style.display = 'none';
+    const provider = $('vidProvider').value;
+    const prompt = $('vidPrompt').value.trim();
+    if(!prompt){ errBox.textContent = 'Write a prompt first.'; errBox.style.display='block'; return; }
+    const btn = $('generateVideoBtn');
+    btn.disabled = true; btn.textContent = 'Generating...';
+    try{
+      let videoUrl, videoBlob;
+      if(provider === 'veo'){
+        const aspect = $('vidVeoAspect').value;
+        videoBlob = await callVeoVideo(prompt, aspect, (n) => { btn.textContent = 'Rendering... (' + (n*3) + 's)'; });
+        videoUrl = URL.createObjectURL(videoBlob);
+      }else{
+        const modelSlug = $('vidModel').value.trim();
+        let input = { prompt };
+        const advancedRaw = $('vidAdvanced').value.trim();
+        if(advancedRaw){ input = Object.assign(input, JSON.parse(advancedRaw)); }
+        const output = await runReplicate(modelSlug, input);
+        videoUrl = Array.isArray(output) ? output[0] : output;
+      }
+      $('vidOutput').innerHTML = '<video controls src="'+videoUrl+'"></video>';
+      state.shelf.videos.push({ name:'video-'+Date.now()+'.mp4', url:videoUrl, blob:videoBlob });
+      renderShelf();
+    }catch(err){
+      errBox.textContent = err.message;
+      errBox.style.display = 'block';
+    }finally{
+      btn.disabled = false; btn.textContent = 'Generate video';
+    }
+  });
+
+  function populateComposeAudioSelect(){
+    const sel = $('composeAudioSelect');
+    if(state.shelf.audios.length === 0){ sel.innerHTML = '<option value="">Add audio in the Voice tab first</option>'; return; }
+    sel.innerHTML = '';
+    state.shelf.audios.forEach((a, i) => {
+      const opt = document.createElement('option');
+      opt.value = i; opt.textContent = a.name;
+      sel.appendChild(opt);
+    });
+  }
+
+  function dimsForOrientation(o){
+    if(o === 'vertical') return [1080, 1920];
+    if(o === 'square') return [1080, 1080];
+    return [1920, 1080];
+  }
+
+  async function loadImage(src){
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
+  }
+
+  async function composeImagesAndAudioToVideo(imageAssets, audioAsset, orientation){
+    const [w, h] = dimsForOrientation(orientation);
+    const canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    const images = await Promise.all(imageAssets.map(im => loadImage(im.url)));
+
+    function drawCover(img){
+      ctx.fillStyle = '#000';
+      ctx.fillRect(0,0,w,h);
+      const scale = Math.max(w/img.width, h/img.height);
+      const iw = img.width*scale, ih = img.height*scale;
+      ctx.drawImage(img, (w-iw)/2, (h-ih)/2, iw, ih);
+    }
+    drawCover(images[0]);
+
+    const audioEl = new Audio(audioAsset.url);
+    await new Promise(resolve => { audioEl.addEventListener('loadedmetadata', resolve, {once:true}); audioEl.load(); });
+    const duration = audioEl.duration || 5;
+    const perImage = duration / images.length;
+
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioCtx.createMediaElementSource(audioEl);
+    const dest = audioCtx.createMediaStreamDestination();
+    source.connect(dest);
+    source.connect(audioCtx.destination);
+
+    const canvasStream = canvas.captureStream(30);
+    const combined = new MediaStream([...canvasStream.getVideoTracks(), ...dest.stream.getAudioTracks()]);
+    const recorder = new MediaRecorder(combined, { mimeType:'video/webm;codecs=vp9,opus' });
+    const chunks = [];
+    recorder.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
+    const stopped = new Promise(resolve => { recorder.onstop = resolve; });
+
+    let imgIndex = 0;
+    const swapTimer = images.length > 1 ? setInterval(() => {
+      imgIndex = (imgIndex + 1) % images.length;
+      drawCover(images[imgIndex]);
+    }, perImage * 1000) : null;
+
+    recorder.start();
+    audioEl.play();
+    audioEl.addEventListener('ended', () => {
+      if(swapTimer) clearInterval(swapTimer);
+      recorder.stop();
+    }, {once:true});
+
+    await stopped;
+    const blob = new Blob(chunks, { type:'video/webm' });
+    const url = URL.createObjectURL(blob);
+    const name = 'reel-'+Date.now()+'.webm';
+    $('composeOutput').innerHTML = '<video controls src="'+url+'"></video>';
+    const videoAsset = { name, url, blob };
+    state.shelf.videos.push(videoAsset);
+    renderShelf();
+    return videoAsset;
+  }
+
+  $('composeBtn').addEventListener('click', async () => {
+    const errBox = $('composeError');
+    errBox.style.display = 'none';
+    const audioIdx = $('composeAudioSelect').value;
+    if(audioIdx === ''){ errBox.textContent = 'Pick an audio track first.'; errBox.style.display='block'; return; }
+    if(state.shelf.images.length === 0){ errBox.textContent = 'Add at least one image first, in the Image tab.'; errBox.style.display='block'; return; }
+    const btn = $('composeBtn');
+    btn.disabled = true; btn.textContent = 'Composing...';
+    try{
+      const audioAsset = state.shelf.audios[audioIdx];
+      await composeImagesAndAudioToVideo(state.shelf.images, audioAsset, $('composeOrientation').value);
+    }catch(err){
+      errBox.textContent = 'Composing failed: ' + err.message + '. This uses standard browser recording APIs, support can vary by browser, Chrome or Edge work best.';
+      errBox.style.display = 'block';
+    }finally{
+      btn.disabled = false; btn.textContent = 'Compose video from shelf';
+    }
+  });
+
+  $('ytThumbInput').addEventListener('change', e => {
+    const file = e.target.files[0]; if(!file) return;
+    const url = URL.createObjectURL(file);
+    state.shelf.thumbs.youtube = { url, blob:file };
+    $('ytThumbDrop').classList.add('filled');
+    $('ytThumbDrop').querySelector('.dz-label').textContent = file.name;
+    renderShelf();
+  });
+  $('igThumbInput').addEventListener('change', e => {
+    const file = e.target.files[0]; if(!file) return;
+    const url = URL.createObjectURL(file);
+    state.shelf.thumbs.instagram = { url, blob:file };
+    $('igThumbDrop').classList.add('filled');
+    $('igThumbDrop').querySelector('.dz-label').textContent = file.name;
+    renderShelf();
+  });
+
+  function renderAssembleSummary(){
+    const s = state.shelf;
+    let html = '<div class="assembly-grid">';
+    html += '<div class="asset-card"><h4>Script</h4><pre style="white-space:pre-wrap;font-family:\'IBM Plex Mono\',monospace;font-size:12px;color:var(--text-muted);max-height:150px;overflow:auto;margin:0;">' + (state.script ? state.script.replace(/</g,'&lt;') : 'No script yet') + '</pre></div>';
+    html += '<div class="asset-card"><h4>Counts</h4>' +
+      '<div>Voices: '+s.voices.length+'</div>' +
+      '<div>Audio clips: '+s.audios.length+'</div>' +
+      '<div>Images: '+s.images.length+'</div>' +
+      '<div>Videos: '+s.videos.length+'</div>' +
+      '<div>Thumbnails: '+((s.thumbs.youtube?1:0)+(s.thumbs.instagram?1:0))+' of 2</div>' +
+      '</div>';
+    html += '</div>';
+    if(s.images.length){
+      html += '<div class="asset-card" style="margin-top:16px;"><h4>Images</h4><div class="image-strip">' + s.images.map(im=>'<img src="'+im.url+'">').join('') + '</div></div>';
+    }
+    $('assembleSummary').innerHTML = html;
+  }
+
+  async function blobFromUrl(url){
+    const res = await fetch(url);
+    return res.blob();
+  }
+
+  $('exportZipBtn').addEventListener('click', async () => {
+    const zip = new JSZip();
+    if(state.script) zip.file('script.txt', state.script);
+    const s = state.shelf;
+    for(const a of s.audios){ zip.file('audio/'+a.name, a.blob || await blobFromUrl(a.url)); }
+    for(const im of s.images){ zip.file('images/'+im.name, im.blob || await blobFromUrl(im.url)); }
+    for(const v of s.videos){ zip.file('videos/'+v.name, v.blob || await blobFromUrl(v.url)); }
+    if(s.thumbs.youtube) zip.file('thumbnails/youtube.png', s.thumbs.youtube.blob || await blobFromUrl(s.thumbs.youtube.url));
+    if(s.thumbs.instagram) zip.file('thumbnails/instagram.png', s.thumbs.instagram.blob || await blobFromUrl(s.thumbs.instagram.url));
+    const blob = await zip.generateAsync({type:'blob'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'reel-foundry-package.zip';
+    a.click();
+  });
+
+  function loadScriptOnce(src){
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[src="'+src+'"]');
+      if(existing){ resolve(); return; }
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('Could not load ' + src));
+      document.head.appendChild(s);
+    });
+  }
+
+  $('connectYoutubeBtn').addEventListener('click', async () => {
+    const clientId = getKeys().googleClientId;
+    const statusEl = $('ytConnectStatus');
+    if(!clientId){ statusEl.textContent = 'Add your Google OAuth Client ID in API keys first.'; return; }
+    statusEl.textContent = 'Connecting...';
+    try{
+      await loadScriptOnce('https://accounts.google.com/gsi/client');
+      const tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: clientId,
+        scope: 'https://www.googleapis.com/auth/youtube.readonly',
+        callback: async (resp) => {
+          if(resp.error){ statusEl.textContent = 'Connection failed: ' + resp.error; return; }
+          try{
+            const res = await fetch('https://www.googleapis.com/youtube/v3/channels?part=snippet,statistics&mine=true', {
+              headers:{ 'Authorization':'Bearer '+resp.access_token }
+            });
+            const data = await res.json();
+            if(!res.ok) throw new Error((data.error && data.error.message) || 'YouTube request failed');
+            const ch = data.items && data.items[0];
+            if(!ch){ statusEl.textContent = 'Connected, but no channel found on this account.'; return; }
+            statusEl.textContent = 'Connected as ' + ch.snippet.title;
+            $('ytStats').innerHTML =
+              '<div>Subscribers: ' + ch.statistics.subscriberCount + '</div>' +
+              '<div>Total views: ' + ch.statistics.viewCount + '</div>' +
+              '<div>Videos: ' + ch.statistics.videoCount + '</div>';
+          }catch(err){
+            statusEl.textContent = 'Connected, but could not read stats: ' + err.message;
+          }
+        }
+      });
+      tokenClient.requestAccessToken();
+    }catch(err){
+      statusEl.textContent = 'Could not start Google sign in: ' + err.message;
+    }
+  });
+
+  $('connectFacebookBtn').addEventListener('click', async () => {
+    const appId = getKeys().facebookAppId;
+    const statusEl = $('fbConnectStatus');
+    if(!appId){ statusEl.textContent = 'Add your Facebook App ID in API keys first.'; return; }
+    statusEl.textContent = 'Connecting...';
+    try{
+      if(!window.FB){
+        await loadScriptOnce('https://connect.facebook.net/en_US/sdk.js');
+        await new Promise(resolve => {
+          window.fbAsyncInit = function(){
+            FB.init({ appId, version:'v19.0', xfbml:false });
+            resolve();
+          };
+        });
+      }
+      FB.login((response) => {
+        if(response.status !== 'connected'){ statusEl.textContent = 'Facebook login was not completed.'; return; }
+        const token = response.authResponse.accessToken;
+        FB.api('/me/accounts', { access_token: token }, (pagesResp) => {
+          if(!pagesResp || pagesResp.error){ statusEl.textContent = 'Connected, but could not list Pages, check permissions.'; return; }
+          const pages = pagesResp.data || [];
+          if(pages.length === 0){ statusEl.textContent = 'Connected, but no Facebook Page found on this account.'; return; }
+          const page = pages[0];
+          statusEl.textContent = 'Connected as ' + page.name;
+          FB.api('/' + page.id, { fields:'followers_count,fan_count', access_token: page.access_token }, (pageInfo) => {
+            $('fbStats').innerHTML =
+              '<div>Page: ' + (pageInfo.name || page.name) + '</div>' +
+              (pageInfo.followers_count !== undefined ? '<div>Followers: ' + pageInfo.followers_count + '</div>' : '') +
+              (pageInfo.fan_count !== undefined ? '<div>Page likes: ' + pageInfo.fan_count + '</div>' : '');
+          });
+        });
+      }, { scope: 'pages_show_list,pages_read_engagement,instagram_basic,instagram_manage_insights' });
+    }catch(err){
+      statusEl.textContent = 'Could not start Facebook login: ' + err.message;
+    }
+  });
+
+  const savedVoices = JSON.parse(localStorage.getItem('rf_cloned_voices') || '[]');
+  state.shelf.voices = savedVoices;
+  renderShelf();
+  populateComposeAudioSelect();
+</script>
+
+</body>
+</html>

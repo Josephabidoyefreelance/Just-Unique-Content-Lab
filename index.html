@@ -141,17 +141,31 @@
   <div class="settings-panel" id="settingsPanel">
     <h3>Your API keys</h3>
     <p class="settings-note">Stored only in this browser's local storage. Never sent anywhere except straight to each provider when you generate something. If you're building this for customers, each person pastes in their own keys, this app never sees or holds them centrally.</p>
+    <label class="field-label" style="margin-top:0;">Text and idea model, pick the one you're paying for</label>
+    <div class="row" style="margin-bottom:4px;">
+      <div>
+        <select id="llmProviderSelect">
+          <option value="anthropic">Anthropic (Claude)</option>
+          <option value="openai">OpenAI (GPT)</option>
+          <option value="google">Google (Gemini)</option>
+          <option value="grok">xAI (Grok)</option>
+        </select>
+      </div>
+      <div class="key-field" style="flex:2;"><input type="text" id="llmProviderKeyInput" placeholder="Paste the key for the provider selected above"></div>
+    </div>
+    <div class="hint">Switch the dropdown any time, each provider keeps its own saved key. Only the one selected here shows up as active, so the panel doesn't fill up with keys you're not using. On Grok: the chat endpoint is confirmed from xAI's own docs, but I have not test run it against a live key, and their live "list models" endpoint is unconfirmed, so "Refresh models" may fail silently for Grok and just keep the two model names built in here.</div>
+
+    <label class="field-label">Other services, only fill in the ones you actually use</label>
     <div class="key-grid">
-      <div class="key-field"><label>Anthropic API key</label><input type="text" id="key-anthropic" placeholder="sk-ant-..."></div>
-      <div class="key-field"><label>OpenAI API key</label><input type="text" id="key-openai" placeholder="sk-..."></div>
-      <div class="key-field"><label>Google AI API key</label><input type="text" id="key-google" placeholder="AIza..."></div>
-      <div class="key-field"><label>ElevenLabs API key</label><input type="text" id="key-elevenlabs" placeholder="..."></div>
-      <div class="key-field"><label>Replicate API token</label><input type="text" id="key-replicate" placeholder="r8_..."></div>
-      <div class="key-field"><label>Wavespeed API key, stored but not wired yet</label><input type="text" id="key-wavespeed" placeholder="..."></div>
+      <div class="key-field"><label>ElevenLabs API key, for Voice</label><input type="text" id="key-elevenlabs" placeholder="..."></div>
+      <div class="key-field"><label>Replicate API token, for Image and Video</label><input type="text" id="key-replicate" placeholder="r8_..."></div>
       <div class="key-field"><label>Google OAuth Client ID, for Analytics, not secret</label><input type="text" id="key-google-client-id" placeholder="xxxx.apps.googleusercontent.com"></div>
       <div class="key-field"><label>Facebook App ID, for Analytics, not secret</label><input type="text" id="key-facebook-app-id" placeholder="digits only"></div>
+      <div class="key-field"><label>Wavespeed API key, stored but not wired yet</label><input type="text" id="key-wavespeed" placeholder="..."></div>
+      <div class="key-field"><label>Higgsfield Key ID, for Image and Video</label><input type="text" id="key-higgsfield-id" placeholder="Key ID from cloud.higgsfield.ai"></div>
+      <div class="key-field"><label>Higgsfield Key Secret</label><input type="text" id="key-higgsfield-secret" placeholder="Key Secret from cloud.higgsfield.ai"></div>
     </div>
-    <div class="hint">You only need the keys for the tabs you use. Anthropic, OpenAI, or Google, pick any one, for Script and Idea. ElevenLabs for Voice. Replicate for Image and Video. Wavespeed is saved here for when you send me its exact API docs so I can wire it for real instead of guessing.</div>
+    <div class="hint">Note on Google: the same Google AI key above also unlocks Veo 3 video in the Video tab, no separate key needed for that. Note on Higgsfield: their API needs two values, a Key ID and a Key Secret, both from your Higgsfield dashboard, not one combined key.</div>
     <div style="margin-top:14px;"><button class="btn btn-primary btn-small" id="saveKeysBtn">Save keys</button></div>
     <div class="provider-status">
       <strong>Before you rely on this:</strong> Anthropic officially supports calling its API straight from a browser. OpenAI, Google, ElevenLabs, and Replicate may or may not allow that depending on your account and their current policy, I have not verified each one live. If a generate button fails with a network or CORS error, that is why, not a bug in this page. The fix is a small proxy server relaying the request, tell me and I will build it.
@@ -223,6 +237,8 @@
       </div>
       <label class="field-label">Custom angle, optional, use this to be specific</label>
       <input type="text" id="ideaCustom" style="width:100%;" placeholder="e.g. she found out on their anniversary, told through her texts">
+      <div class="hint" id="ideaAngleHint">Leave the niche field and this fills in a starting angle for you, based on the niche and tone. It's a plain template, not AI-written, edit it freely. For a sharper AI-written angle, use the button below.</div>
+      <div style="margin-top:6px;"><button class="btn btn-ghost btn-small" id="suggestAngleBtn" type="button">Suggest a sharper angle with AI</button></div>
 
       <div class="row">
         <div>
@@ -241,34 +257,33 @@
             <option value="3" selected>3</option>
             <option value="5">5</option>
             <option value="8">8</option>
+            <option value="10">10, storytelling</option>
+            <option value="12">12, storytelling</option>
+            <option value="15">15, storytelling</option>
           </select>
         </div>
       </div>
       <div class="hint">There is no API, anywhere, that generates more than a few seconds of continuous AI video per request. A long length here means a longer script and more scenes stitched together deliberately, not one uninterrupted AI shot. Anyone claiming otherwise is not being straight with you.</div>
 
       <label class="field-label">Characters, optional, describe each one</label>
-      <input type="text" id="ideaCharacters" list="ideaCharacterSuggestions" style="width:100%;" placeholder="e.g. Character A: Black woman, late 20s. Character B: white man, 40s.">
-      <datalist id="ideaCharacterSuggestions">
-        <option value="Black or African American">
-        <option value="African">
-        <option value="Asian">
-        <option value="South Asian">
-        <option value="Latino or Hispanic">
-        <option value="White or Caucasian">
-        <option value="Middle Eastern">
-        <option value="Indigenous">
-        <option value="Mixed race">
-      </datalist>
+      <div class="row" style="align-items:flex-start;">
+        <input type="text" id="ideaCharacters" style="width:100%;" placeholder="e.g. Character A: Black woman, late 20s. Character B: white man, 40s.">
+        <button class="btn btn-ghost btn-small" id="charChipToggle" type="button" style="flex:0;">Pick ▾</button>
+      </div>
+      <div id="charChipPanel" style="display:none;margin-top:8px;padding:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;">
+        <div class="hint" style="margin-top:0;">Click any tag to add it to the field above.</div>
+        <div class="suggestion-row" id="charChips"></div>
+      </div>
+
       <label class="field-label">Attire, optional</label>
-      <input type="text" id="ideaAttire" list="ideaAttireSuggestions" style="width:100%;" placeholder="e.g. business casual, streetwear, formal suit">
-      <datalist id="ideaAttireSuggestions">
-        <option value="business casual">
-        <option value="formal suit">
-        <option value="streetwear">
-        <option value="casual, jeans and t shirt">
-        <option value="loungewear">
-        <option value="uniform">
-      </datalist>
+      <div class="row" style="align-items:flex-start;">
+        <input type="text" id="ideaAttire" style="width:100%;" placeholder="e.g. business casual, streetwear, formal suit">
+        <button class="btn btn-ghost btn-small" id="attireChipToggle" type="button" style="flex:0;">Pick ▾</button>
+      </div>
+      <div id="attireChipPanel" style="display:none;margin-top:8px;padding:12px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;">
+        <div class="hint" style="margin-top:0;">Click any tag to add it to the field above.</div>
+        <div class="suggestion-row" id="attireChips"></div>
+      </div>
       <div class="hint">Keeping the same character looking identical across separate generated scenes is a known limitation of every current image and video model, not something this tool can guarantee. Treat these as strong direction for each shot, not a locked in actor.</div>
       <div class="row" style="margin-top:6px;">
         <div>
@@ -285,6 +300,10 @@
             </optgroup>
             <optgroup label="Google">
               <option value="google:gemini-2.0-flash">Gemini 2.0 Flash</option>
+            </optgroup>
+            <optgroup label="xAI">
+              <option value="grok:grok-4.7">Grok 4.7</option>
+              <option value="grok:grok-4">Grok 4</option>
             </optgroup>
           </select>
         </div>
@@ -330,6 +349,10 @@
             </optgroup>
             <optgroup label="Google">
               <option value="google:gemini-2.0-flash">Gemini 2.0 Flash</option>
+            </optgroup>
+            <optgroup label="xAI">
+              <option value="grok:grok-4.7">Grok 4.7</option>
+              <option value="grok:grok-4">Grok 4</option>
             </optgroup>
           </select>
         </div>
@@ -381,6 +404,17 @@
 
       <hr style="border:none;border-top:1px solid var(--border);margin:26px 0;">
 
+      <h3 style="font-family:'Fraunces',serif;font-size:16px;margin:0 0 10px;">Design a voice from a prompt</h3>
+      <p class="desc" style="margin-bottom:12px;">No real person needed. Describe the voice you want, ElevenLabs generates a few options to choose from.</p>
+      <label class="field-label">Voice description</label>
+      <textarea id="designVoicePrompt" style="min-height:70px;" placeholder="e.g. A calm, deep male voice in his 40s, measured pacing, quiet authority, American accent."></textarea>
+      <div style="margin-top:10px;"><button class="btn btn-ghost" id="designVoiceBtn">Generate voice previews</button></div>
+      <div class="error-box" id="designVoiceError" style="display:none;"></div>
+      <div id="designVoicePreviews" style="margin-top:14px;"></div>
+      <div class="hint">This uses ElevenLabs' Voice Design endpoint. If it errors with a 404 or "not found," their API path for this feature has likely moved since this was built, tell me the exact error and I'll fix the endpoint.</div>
+
+      <hr style="border:none;border-top:1px solid var(--border);margin:26px 0;">
+
       <h3 style="font-family:'Fraunces',serif;font-size:16px;margin:0 0 10px;">Generate speech</h3>
       <div class="row">
         <div>
@@ -408,7 +442,13 @@
   <div class="tab-panel" id="tab-image">
     <div class="panel">
       <h2>Image</h2>
-      <p class="desc">Runs any model on Replicate. Type a prompt to generate an image from scratch, or upload a reference image to recreate or restyle it.</p>
+      <p class="desc">Runs any model on Replicate or Higgsfield. Type a prompt to generate an image from scratch, or upload a reference image to recreate or restyle it.</p>
+      <label class="field-label">Provider</label>
+      <select id="imgProvider">
+        <option value="replicate">Replicate, any model slug</option>
+        <option value="higgsfield">Higgsfield (Soul V2)</option>
+      </select>
+      <div id="imgReplicateFields">
       <label class="field-label">Replicate model, owner slash name</label>
       <input type="text" id="imgModel" list="imgModelSuggestions" placeholder="e.g. black-forest-labs/flux-schnell" style="width:100%;">
       <datalist id="imgModelSuggestions">
@@ -417,9 +457,18 @@
         <option value="stability-ai/stable-diffusion-3.5-large">
       </datalist>
       <div class="hint">Suggestions only, not verified for your account. Browse replicate.com/explore for current models and their exact input fields.</div>
+      </div>
+      <div id="imgHiggsfieldFields" style="display:none;">
+      <label class="field-label">Higgsfield endpoint path</label>
+      <input type="text" id="imgHiggsfieldPath" value="higgsfield-ai/soul/v2/standard" style="width:100%;">
+      <div class="hint">Pre-filled from Higgsfield's docs, not tested against a live account. If this fails, check your current endpoint path at docs.higgsfield.ai and paste it here, no code edit needed.</div>
+      </div>
 
       <label class="field-label">Prompt</label>
       <textarea id="imgPrompt" style="min-height:80px;" placeholder="Describe the image. For recreating a person or reference, describe what should change or stay the same."></textarea>
+
+      <label style="display:flex;align-items:center;gap:7px;font-size:13.5px;margin-top:10px;"><input type="checkbox" id="imgRealismBoost" checked> Photorealism boost</label>
+      <div class="hint">Adds strong realism wording to your prompt before sending it, sharp focus, natural skin texture, real camera detail. This only shapes the prompt, actual realism still depends on the model you pick above.</div>
 
       <label class="field-label">Reference image, optional, used for image to image or face based recreation</label>
       <label class="dropzone" id="imgRefDrop">
@@ -458,6 +507,7 @@
       <select id="vidProvider">
         <option value="replicate">Replicate, any model slug</option>
         <option value="veo">Google Veo 3, uses your Google key</option>
+        <option value="higgsfield">Higgsfield</option>
       </select>
       <div id="vidReplicateFields">
       <label class="field-label">Replicate model, owner slash name</label>
@@ -468,6 +518,11 @@
       </datalist>
       <div class="hint">Suggestions only, not verified for your account. Confirm the current slug on replicate.com/explore.</div>
       </div>
+      <div id="vidHiggsfieldFields" style="display:none;">
+      <label class="field-label">Higgsfield endpoint path</label>
+      <input type="text" id="vidHiggsfieldPath" value="higgsfiled/genjutsu/motion-transfer/v1.0" style="width:100%;">
+      <div class="hint">Pre-filled from Higgsfield's docs, not tested against a live account, and their video endpoints mostly expect a source video or image rather than a bare text prompt. If this errors, check docs.higgsfield.ai for the exact text-to-video endpoint and paste it here, no code edit needed.</div>
+      </div>
       <div id="vidVeoFields" style="display:none;">
         <label class="field-label">Aspect ratio</label>
         <select id="vidVeoAspect">
@@ -476,6 +531,15 @@
         </select>
         <div class="hint">Paid tier only on your Google account. Priced per second of video, videos usually take a minute or more to render, this page will wait and poll for it.</div>
       </div>
+      <label class="field-label">Visual style</label>
+      <select id="vidStyle">
+        <option value="none">No extra style wording</option>
+        <option value="cinematic">Cinematic drama</option>
+        <option value="action">Action movie, high intensity</option>
+        <option value="documentary">Documentary, real life feel</option>
+        <option value="horror">Horror, tense atmosphere</option>
+      </select>
+      <div class="hint">Adds matching visual language to your prompt, 4K, cinematic lighting, real-world physics, and so on for the style picked. This shapes the request, it doesn't guarantee a particular render quality, that's down to the model itself.</div>
       <label class="field-label">Prompt</label>
       <textarea id="vidPrompt" style="min-height:70px;" placeholder="Describe the shot, motion, and mood."></textarea>
       <details>
@@ -588,33 +652,44 @@
       anthropic: localStorage.getItem('rf_key_anthropic') || '',
       openai: localStorage.getItem('rf_key_openai') || '',
       google: localStorage.getItem('rf_key_google') || '',
+      grok: localStorage.getItem('rf_key_grok') || '',
       elevenlabs: localStorage.getItem('rf_key_elevenlabs') || '',
       replicate: localStorage.getItem('rf_key_replicate') || '',
       wavespeed: localStorage.getItem('rf_key_wavespeed') || '',
       googleClientId: localStorage.getItem('rf_key_google_client_id') || '',
-      facebookAppId: localStorage.getItem('rf_key_facebook_app_id') || ''
+      facebookAppId: localStorage.getItem('rf_key_facebook_app_id') || '',
+      higgsfieldId: localStorage.getItem('rf_key_higgsfield_id') || '',
+      higgsfieldSecret: localStorage.getItem('rf_key_higgsfield_secret') || ''
     };
   }
   function loadKeysIntoFields(){
     const k = getKeys();
-    $('key-anthropic').value = k.anthropic;
-    $('key-openai').value = k.openai;
-    $('key-google').value = k.google;
     $('key-elevenlabs').value = k.elevenlabs;
     $('key-replicate').value = k.replicate;
     $('key-wavespeed').value = k.wavespeed;
     $('key-google-client-id').value = k.googleClientId;
     $('key-facebook-app-id').value = k.facebookAppId;
+    $('key-higgsfield-id').value = k.higgsfieldId;
+    $('key-higgsfield-secret').value = k.higgsfieldSecret;
+    const activeProvider = localStorage.getItem('rf_active_llm_provider') || 'anthropic';
+    $('llmProviderSelect').value = activeProvider;
+    $('llmProviderKeyInput').value = k[activeProvider] || '';
   }
+  $('llmProviderSelect').addEventListener('change', () => {
+    const provider = $('llmProviderSelect').value;
+    $('llmProviderKeyInput').value = getKeys()[provider] || '';
+  });
   $('saveKeysBtn').addEventListener('click', () => {
-    localStorage.setItem('rf_key_anthropic', $('key-anthropic').value.trim());
-    localStorage.setItem('rf_key_openai', $('key-openai').value.trim());
-    localStorage.setItem('rf_key_google', $('key-google').value.trim());
+    const provider = $('llmProviderSelect').value;
+    localStorage.setItem('rf_key_' + provider, $('llmProviderKeyInput').value.trim());
+    localStorage.setItem('rf_active_llm_provider', provider);
     localStorage.setItem('rf_key_elevenlabs', $('key-elevenlabs').value.trim());
     localStorage.setItem('rf_key_replicate', $('key-replicate').value.trim());
     localStorage.setItem('rf_key_wavespeed', $('key-wavespeed').value.trim());
     localStorage.setItem('rf_key_google_client_id', $('key-google-client-id').value.trim());
     localStorage.setItem('rf_key_facebook_app_id', $('key-facebook-app-id').value.trim());
+    localStorage.setItem('rf_key_higgsfield_id', $('key-higgsfield-id').value.trim());
+    localStorage.setItem('rf_key_higgsfield_secret', $('key-higgsfield-secret').value.trim());
     $('saveKeysBtn').textContent = 'Saved';
     setTimeout(() => { $('saveKeysBtn').textContent = 'Save keys'; }, 1400);
     if($('key-elevenlabs').value.trim()) populateVoiceSelect();
@@ -681,7 +756,7 @@
     });
   }
 
-  async function callAnthropic(model, systemPrompt, userPrompt){
+  async function callAnthropic(model, systemPrompt, userPrompt, maxTokens){
     const key = getKeys().anthropic;
     if(!key) throw new Error('Add your Anthropic key in API keys first.');
     const res = await fetch('https://api.anthropic.com/v1/messages', {
@@ -692,27 +767,40 @@
         'anthropic-version':'2023-06-01',
         'anthropic-dangerous-direct-browser-access':'true'
       },
-      body: JSON.stringify({ model, max_tokens:4096, system:systemPrompt, messages:[{role:'user', content:userPrompt}] })
+      body: JSON.stringify({ model, max_tokens:maxTokens||2048, system:systemPrompt, messages:[{role:'user', content:userPrompt}] })
     });
     const data = await res.json();
     if(!res.ok) throw new Error((data.error && data.error.message) || 'Anthropic request failed');
     return (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n').trim();
   }
 
-  async function callOpenAI(model, systemPrompt, userPrompt){
+  async function callOpenAI(model, systemPrompt, userPrompt, maxTokens){
     const key = getKeys().openai;
     if(!key) throw new Error('Add your OpenAI key in API keys first.');
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
       method:'POST',
       headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+key },
-      body: JSON.stringify({ model, messages:[{role:'system',content:systemPrompt},{role:'user',content:userPrompt}] })
+      body: JSON.stringify({ model, max_tokens:maxTokens||2048, messages:[{role:'system',content:systemPrompt},{role:'user',content:userPrompt}] })
     });
     const data = await res.json();
     if(!res.ok) throw new Error((data.error && data.error.message) || 'OpenAI request failed');
     return data.choices[0].message.content.trim();
   }
 
-  async function callGoogle(model, systemPrompt, userPrompt){
+  async function callGrok(model, systemPrompt, userPrompt, maxTokens){
+    const key = getKeys().grok;
+    if(!key) throw new Error('Add your xAI (Grok) key in API keys first.');
+    const res = await fetch('https://api.x.ai/v1/chat/completions', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+key },
+      body: JSON.stringify({ model, max_tokens:maxTokens||2048, messages:[{role:'system',content:systemPrompt},{role:'user',content:userPrompt}] })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error((data.error && (data.error.message || data.error)) || 'xAI request failed');
+    return data.choices[0].message.content.trim();
+  }
+
+  async function callGoogle(model, systemPrompt, userPrompt, maxTokens){
     const key = getKeys().google;
     if(!key) throw new Error('Add your Google AI key in API keys first.');
     const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+model+':generateContent?key='+key, {
@@ -720,7 +808,8 @@
       headers:{ 'Content-Type':'application/json' },
       body: JSON.stringify({
         systemInstruction: { parts:[{ text: systemPrompt }] },
-        contents: [{ role:'user', parts:[{ text: userPrompt }] }]
+        contents: [{ role:'user', parts:[{ text: userPrompt }] }],
+        generationConfig: { maxOutputTokens: maxTokens||2048 }
       })
     });
     const data = await res.json();
@@ -731,19 +820,23 @@
     return text.trim();
   }
 
-  function callScriptModel(fullValue, systemPrompt, userPrompt){
+  function callScriptModel(fullValue, systemPrompt, userPrompt, maxTokens){
     const [provider, model] = fullValue.split(':');
-    if(provider === 'anthropic') return callAnthropic(model, systemPrompt, userPrompt);
-    if(provider === 'google') return callGoogle(model, systemPrompt, userPrompt);
-    return callOpenAI(model, systemPrompt, userPrompt);
+    if(provider === 'anthropic') return callAnthropic(model, systemPrompt, userPrompt, maxTokens);
+    if(provider === 'google') return callGoogle(model, systemPrompt, userPrompt, maxTokens);
+    if(provider === 'grok') return callGrok(model, systemPrompt, userPrompt, maxTokens);
+    return callOpenAI(model, systemPrompt, userPrompt, maxTokens);
   }
 
   async function refreshModelOptions(selectId){
     const sel = $(selectId);
     const keys = getKeys();
+    const existingGrokGroup = sel.querySelector('optgroup[label="xAI"]');
+    const existingGrokHTML = existingGrokGroup ? existingGrokGroup.outerHTML : '';
     let anthropicOpts = [];
     let openaiOpts = [];
     let googleOpts = [];
+    let grokOpts = [];
     try{
       if(keys.anthropic){
         const res = await fetch('https://api.anthropic.com/v1/models', { headers:{ 'x-api-key': keys.anthropic, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' } });
@@ -765,14 +858,23 @@
         if(res.ok){ googleOpts = (data.models||[]).filter(m => /generateContent/.test((m.supportedGenerationMethods||[]).join(','))).map(m => ({ value:'google:'+m.name.replace('models/',''), label:m.displayName || m.name })); }
       }
     }catch(e){}
-    if(anthropicOpts.length === 0 && openaiOpts.length === 0 && googleOpts.length === 0){
-      alert('Could not load live models, add at least one of Anthropic, OpenAI, or Google key first. Keeping the current list.');
+    try{
+      if(keys.grok){
+        const res = await fetch('https://api.x.ai/v1/models', { headers:{ 'Authorization':'Bearer '+keys.grok } });
+        const data = await res.json();
+        if(res.ok){ grokOpts = (data.data||[]).map(m => ({ value:'grok:'+m.id, label:m.id })); }
+      }
+    }catch(e){}
+    if(anthropicOpts.length === 0 && openaiOpts.length === 0 && googleOpts.length === 0 && grokOpts.length === 0){
+      alert('Could not load live models, add at least one of Anthropic, OpenAI, Google, or xAI key first. Keeping the current list.');
       return;
     }
     let html = '';
     if(anthropicOpts.length){ html += '<optgroup label="Anthropic">' + anthropicOpts.map(o => '<option value="'+o.value+'">'+o.label+'</option>').join('') + '</optgroup>'; }
     if(openaiOpts.length){ html += '<optgroup label="OpenAI">' + openaiOpts.map(o => '<option value="'+o.value+'">'+o.label+'</option>').join('') + '</optgroup>'; }
     if(googleOpts.length){ html += '<optgroup label="Google">' + googleOpts.map(o => '<option value="'+o.value+'">'+o.label+'</option>').join('') + '</optgroup>'; }
+    if(grokOpts.length){ html += '<optgroup label="xAI">' + grokOpts.map(o => '<option value="'+o.value+'">'+o.label+'</option>').join('') + '</optgroup>'; }
+    else if(existingGrokHTML){ html += existingGrokHTML; }
     sel.innerHTML = html;
   }
   $('refreshScriptModelsBtn').addEventListener('click', () => refreshModelOptions('scriptModel'));
@@ -811,6 +913,64 @@
     }
     return '<strong style="color:var(--success);">Different from every idea you have generated here before.</strong>';
   }
+
+  const CHARACTER_CHIPS = ['Black or African American woman','Black or African American man','Asian woman','Asian man','South Asian woman','South Asian man','Latino or Hispanic woman','Latino or Hispanic man','White woman','White man','Middle Eastern woman','Middle Eastern man','Indigenous woman','Indigenous man','Mixed race woman','Mixed race man','early 20s','late 20s','30s','40s','50s and older'];
+  const ATTIRE_CHIPS = ['business casual','formal suit','streetwear','casual, jeans and t shirt','loungewear','uniform','athletic wear','evening wear','military uniform','lab coat','traditional dress'];
+
+  function buildChipPanel(containerId, values, targetInputId){
+    const el = $(containerId);
+    el.innerHTML = '';
+    values.forEach(v => {
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.textContent = v;
+      chip.addEventListener('click', () => {
+        const input = $(targetInputId);
+        input.value = input.value.trim() ? input.value.trim() + ', ' + v : v;
+      });
+      el.appendChild(chip);
+    });
+  }
+  buildChipPanel('charChips', CHARACTER_CHIPS, 'ideaCharacters');
+  buildChipPanel('attireChips', ATTIRE_CHIPS, 'ideaAttire');
+  $('charChipToggle').addEventListener('click', () => $('charChipPanel').style.display = $('charChipPanel').style.display === 'none' ? 'block' : 'none');
+  $('attireChipToggle').addEventListener('click', () => $('attireChipPanel').style.display = $('attireChipPanel').style.display === 'none' ? 'block' : 'none');
+
+  const ANGLE_TEMPLATES = {
+    'direct and confident': 'A single blunt claim about {niche} that most people get wrong, stated in the first line.',
+    'casual and funny': 'A relatable, slightly exaggerated everyday moment inside {niche} that people will recognize instantly.',
+    'calm and authoritative': 'A measured, credible take on {niche} that corrects a common misconception.',
+    'fast paced and energetic': 'A rapid countdown or list format built around {niche}, built to keep people watching to the end.',
+    'emotional and dramatic': 'A personal, specific moment inside {niche} told from one person\'s point of view, with a turn nobody sees coming.'
+  };
+  function autoFillAngle(){
+    if($('ideaCustom').value.trim()) return;
+    const niche = $('ideaNiche').value.trim();
+    if(!niche) return;
+    const tone = $('ideaTone').value;
+    const template = ANGLE_TEMPLATES[tone] || ANGLE_TEMPLATES['direct and confident'];
+    $('ideaCustom').value = template.replace('{niche}', niche);
+  }
+  $('ideaNiche').addEventListener('change', autoFillAngle);
+  $('ideaNiche').addEventListener('blur', autoFillAngle);
+  $('ideaTone').addEventListener('change', autoFillAngle);
+
+  $('suggestAngleBtn').addEventListener('click', async () => {
+    const niche = $('ideaNiche').value.trim() || 'general';
+    const tone = $('ideaTone').value;
+    const btn = $('suggestAngleBtn');
+    btn.disabled = true; btn.textContent = 'Thinking...';
+    try{
+      const text = await callScriptModel($('ideaModel').value,
+        'Write exactly one sentence, under 25 words, describing a specific, fresh angle for a short video in the given niche and tone. No preamble, no quotes, just the sentence.',
+        'Niche: ' + niche + '. Tone: ' + tone + '.');
+      $('ideaCustom').value = text.trim().replace(/^"|"$/g, '');
+    }catch(err){
+      alert('Could not get a suggestion: ' + err.message);
+    }finally{
+      btn.disabled = false; btn.textContent = 'Suggest a sharper angle with AI';
+    }
+  });
 
   function renderIdeaScenes(scenes){
     const el = $('ideaScenes');
@@ -859,10 +1019,18 @@
     const userPrompt = 'Niche: ' + niche + '. Specific angle: ' + (angle || 'none given, invent one') + '. Tone: ' + tone + '. Platforms: ' + platforms.join(', ') + '. Length: ' + length + '. Characters: ' + (characters || 'not specified, invent appropriate ones') + '. Attire: ' + (attire || 'not specified, invent appropriate attire') + '.';
     const btn = $('generateIdeaBtn');
     btn.disabled = true; btn.textContent = 'Generating...';
+    const ideaMaxTokens = Math.min(8192, 1500 + (parseInt(sceneCount,10) * 220) + (platforms.length * 150));
     try{
-      const raw = await callScriptModel($('ideaModel').value, systemPrompt, userPrompt);
+      const raw = await callScriptModel($('ideaModel').value, systemPrompt, userPrompt, ideaMaxTokens);
       const idea = extractJSON(raw);
       state.idea = idea;
+      const scriptModelSel = $('scriptModel');
+      if(Array.from(scriptModelSel.options).some(o => o.value === $('ideaModel').value)){
+        scriptModelSel.value = $('ideaModel').value;
+      }
+      const combinedVisual = 'Characters: ' + (characters || 'as described in the scenes') + '. Attire: ' + (attire || 'as described in the scenes') + '. ' + (idea.hook || '');
+      $('imgPrompt').value = combinedVisual;
+      $('vidPrompt').value = combinedVisual;
       $('ideaResult').style.display = 'block';
       $('ideaHook').value = idea.hook || '';
       $('ideaSubtitle').value = idea.subtitle || '';
@@ -893,8 +1061,9 @@
     const errBox = $('scriptError');
     errBox.style.display = 'none';
     btn.disabled = true; btn.textContent = 'Writing...';
+    const scriptMaxTokens = length.includes('2 to 3') ? 3000 : (length.includes('60 to 90') ? 1500 : 900);
     try{
-      const text = await callScriptModel($('scriptModel').value, systemPrompt, topic);
+      const text = await callScriptModel($('scriptModel').value, systemPrompt, topic, scriptMaxTokens);
       state.script = text;
       $('scriptOutput').value = text;
       $('ttsText').value = text;
@@ -942,6 +1111,68 @@
       errBox.style.display = 'block';
     }finally{
       btn.disabled = false; btn.textContent = 'Clone this voice';
+    }
+  });
+
+  $('designVoiceBtn').addEventListener('click', async () => {
+    const key = getKeys().elevenlabs;
+    const errBox = $('designVoiceError');
+    errBox.style.display = 'none';
+    const description = $('designVoicePrompt').value.trim();
+    if(!key){ errBox.textContent = 'Add your ElevenLabs key in API keys first.'; errBox.style.display='block'; return; }
+    if(!description){ errBox.textContent = 'Describe the voice you want first.'; errBox.style.display='block'; return; }
+    const btn = $('designVoiceBtn');
+    btn.disabled = true; btn.textContent = 'Generating previews...';
+    $('designVoicePreviews').innerHTML = '';
+    try{
+      const res = await fetch('https://api.elevenlabs.io/v1/text-to-voice/design', {
+        method:'POST',
+        headers:{ 'xi-api-key': key, 'Content-Type':'application/json' },
+        body: JSON.stringify({ voice_description: description, text: 'This is a preview of what this voice sounds like when it speaks a full sentence.' })
+      });
+      const data = await res.json();
+      if(!res.ok) throw new Error((data.detail && (data.detail.message || JSON.stringify(data.detail))) || 'Voice design request failed');
+      const previews = data.previews || [];
+      if(previews.length === 0) throw new Error('No previews came back, try a more detailed description.');
+      previews.forEach((p, i) => {
+        const card = document.createElement('div');
+        card.className = 'asset-card';
+        card.style.marginBottom = '8px';
+        const audioSrc = 'data:audio/mpeg;base64,' + p.audio_base_64;
+        card.innerHTML = '<h4>Preview ' + (i+1) + '</h4><audio controls src="'+audioSrc+'" style="width:100%;"></audio>';
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'btn btn-primary btn-small';
+        saveBtn.textContent = 'Save this voice';
+        saveBtn.style.marginTop = '8px';
+        saveBtn.addEventListener('click', async () => {
+          saveBtn.disabled = true; saveBtn.textContent = 'Saving...';
+          try{
+            const name = 'Designed voice ' + Date.now();
+            const saveRes = await fetch('https://api.elevenlabs.io/v1/text-to-voice', {
+              method:'POST',
+              headers:{ 'xi-api-key': key, 'Content-Type':'application/json' },
+              body: JSON.stringify({ voice_name: name, voice_description: description, generated_voice_id: p.generated_voice_id })
+            });
+            const saveData = await saveRes.json();
+            if(!saveRes.ok) throw new Error((saveData.detail && (saveData.detail.message || JSON.stringify(saveData.detail))) || 'Could not save this voice');
+            state.shelf.voices.push({ name, voice_id: saveData.voice_id });
+            localStorage.setItem('rf_cloned_voices', JSON.stringify(state.shelf.voices));
+            renderShelf();
+            await populateVoiceSelect();
+            saveBtn.textContent = 'Saved';
+          }catch(err){
+            saveBtn.textContent = 'Failed: ' + err.message;
+            saveBtn.disabled = false;
+          }
+        });
+        card.appendChild(saveBtn);
+        $('designVoicePreviews').appendChild(card);
+      });
+    }catch(err){
+      errBox.textContent = err.message;
+      errBox.style.display = 'block';
+    }finally{
+      btn.disabled = false; btn.textContent = 'Generate voice previews';
     }
   });
 
@@ -1040,6 +1271,49 @@
     return prediction.output;
   }
 
+  async function runHiggsfield(endpointPath, body){
+    const keys = getKeys();
+    if(!keys.higgsfieldId || !keys.higgsfieldSecret) throw new Error('Add both your Higgsfield Key ID and Key Secret in API keys first.');
+    const path = (endpointPath || '').trim().replace(/^\/+/, '');
+    if(!path) throw new Error('Enter a Higgsfield endpoint path first.');
+    const authHeader = 'Key ' + keys.higgsfieldId + ':' + keys.higgsfieldSecret;
+    const createRes = await fetch('https://api.higgsfield.ai/' + path, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization': authHeader },
+      body: JSON.stringify(body)
+    });
+    let job = await createRes.json();
+    if(!createRes.ok) throw new Error((job.message || job.error || JSON.stringify(job)).toString().slice(0,300) || 'Higgsfield request failed, check the endpoint path and your keys.');
+    if(job.status === 'succeeded' || job.status === 'completed') return job;
+    if(!job.status_url) throw new Error('Higgsfield accepted the job but did not return a status_url to poll, their response shape may have changed: ' + JSON.stringify(job).slice(0,200));
+    let attempts = 0;
+    while(job.status !== 'succeeded' && job.status !== 'completed' && job.status !== 'failed' && job.status !== 'error' && attempts < 90){
+      await new Promise(r => setTimeout(r, 2000));
+      const pollRes = await fetch(job.status_url, { headers:{ 'Authorization': authHeader } });
+      job = await pollRes.json();
+      attempts++;
+    }
+    if(job.status !== 'succeeded' && job.status !== 'completed') throw new Error('Higgsfield job did not succeed, status: ' + job.status);
+    return job;
+  }
+
+  function extractHiggsfieldUrl(job){
+    const candidates = [
+      job.output, job.result, job.url, job.image_url, job.video_url,
+      job.results && job.results[0] && (job.results[0].url || job.results[0].min ? job.results[0].url : job.results[0]),
+      job.data && job.data.url,
+      job.output_url
+    ];
+    for(const c of candidates){ if(typeof c === 'string' && c.startsWith('http')) return c; }
+    throw new Error('Higgsfield job finished but the result field was not where I expected, their response shape may differ from what I built this against. Raw response: ' + JSON.stringify(job).slice(0,300));
+  }
+
+  $('imgProvider').addEventListener('change', () => {
+    const isHiggs = $('imgProvider').value === 'higgsfield';
+    $('imgReplicateFields').style.display = isHiggs ? 'none' : 'block';
+    $('imgHiggsfieldFields').style.display = isHiggs ? 'block' : 'none';
+  });
+
   $('imgRefInput').addEventListener('change', e => {
     if(e.target.files[0]){
       $('imgRefDrop').classList.add('filled');
@@ -1056,14 +1330,23 @@
     if(!prompt){ errBox.textContent = 'Write a prompt first.'; errBox.style.display='block'; return; }
     const btn = $('generateImageBtn');
     btn.disabled = true; btn.textContent = 'Generating...';
+    const finalPrompt = $('imgRealismBoost').checked
+      ? prompt + ', photorealistic, shot on a real camera, natural skin texture and lighting, sharp focus, no illustration or CGI look'
+      : prompt;
     try{
-      let input = { prompt };
-      const refFile = $('imgRefInput').files[0];
-      if(refFile) input.image = await fileToDataURL(refFile);
-      const advancedRaw = $('imgAdvanced').value.trim();
-      if(advancedRaw){ input = Object.assign(input, JSON.parse(advancedRaw)); }
-      const output = await runReplicate(modelSlug, input);
-      const imageUrl = Array.isArray(output) ? output[0] : output;
+      let imageUrl;
+      if($('imgProvider').value === 'higgsfield'){
+        const job = await runHiggsfield($('imgHiggsfieldPath').value, { prompt: finalPrompt });
+        imageUrl = extractHiggsfieldUrl(job);
+      }else{
+        let input = { prompt: finalPrompt };
+        const refFile = $('imgRefInput').files[0];
+        if(refFile) input.image = await fileToDataURL(refFile);
+        const advancedRaw = $('imgAdvanced').value.trim();
+        if(advancedRaw){ input = Object.assign(input, JSON.parse(advancedRaw)); }
+        const output = await runReplicate(modelSlug, input);
+        imageUrl = Array.isArray(output) ? output[0] : output;
+      }
       $('imgOutput').innerHTML = '<img src="'+imageUrl+'">';
       const imageAsset = { name:'image-'+Date.now()+'.png', url:imageUrl };
       state.shelf.images.push(imageAsset);
@@ -1086,9 +1369,10 @@
   });
 
   $('vidProvider').addEventListener('change', () => {
-    const isVeo = $('vidProvider').value === 'veo';
-    $('vidReplicateFields').style.display = isVeo ? 'none' : 'block';
-    $('vidVeoFields').style.display = isVeo ? 'block' : 'none';
+    const val = $('vidProvider').value;
+    $('vidReplicateFields').style.display = val === 'replicate' ? 'block' : 'none';
+    $('vidVeoFields').style.display = val === 'veo' ? 'block' : 'none';
+    $('vidHiggsfieldFields').style.display = val === 'higgsfield' ? 'block' : 'none';
   });
 
   async function callVeoVideo(prompt, aspectRatio, onProgress){
@@ -1121,8 +1405,16 @@
     const errBox = $('vidError');
     errBox.style.display = 'none';
     const provider = $('vidProvider').value;
-    const prompt = $('vidPrompt').value.trim();
-    if(!prompt){ errBox.textContent = 'Write a prompt first.'; errBox.style.display='block'; return; }
+    const rawPrompt = $('vidPrompt').value.trim();
+    if(!rawPrompt){ errBox.textContent = 'Write a prompt first.'; errBox.style.display='block'; return; }
+    const STYLE_SUFFIXES = {
+      cinematic: ', cinematic drama, cinematic lighting, 4K, shallow depth of field, real-world physics, subtle film grain, anamorphic lens feel',
+      action: ', action movie style, high intensity, 4K, dynamic camera movement, real-world physics, gritty realistic detail, dramatic lighting',
+      documentary: ', documentary realism, handheld natural camera feel, 4K, real life scenario, natural lighting, unscripted authentic look',
+      horror: ', horror atmosphere, tense mood, low key lighting, 4K, real-world physics, unsettling shadow detail, film grain'
+    };
+    const styleChoice = $('vidStyle').value;
+    const prompt = styleChoice !== 'none' && STYLE_SUFFIXES[styleChoice] ? rawPrompt + STYLE_SUFFIXES[styleChoice] : rawPrompt;
     const btn = $('generateVideoBtn');
     btn.disabled = true; btn.textContent = 'Generating...';
     try{
@@ -1131,6 +1423,9 @@
         const aspect = $('vidVeoAspect').value;
         videoBlob = await callVeoVideo(prompt, aspect, (n) => { btn.textContent = 'Rendering... (' + (n*3) + 's)'; });
         videoUrl = URL.createObjectURL(videoBlob);
+      }else if(provider === 'higgsfield'){
+        const job = await runHiggsfield($('vidHiggsfieldPath').value, { prompt });
+        videoUrl = extractHiggsfieldUrl(job);
       }else{
         const modelSlug = $('vidModel').value.trim();
         let input = { prompt };

@@ -154,6 +154,7 @@
       <div class="key-field" style="flex:2;"><input type="text" id="llmProviderKeyInput" placeholder="Paste the key for the provider selected above"></div>
     </div>
     <div class="hint">Switch the dropdown any time, each provider keeps its own saved key. Only the one selected here shows up as active, so the panel doesn't fill up with keys you're not using. On Grok: the chat endpoint is confirmed from xAI's own docs, but I have not test run it against a live key, and their live "list models" endpoint is unconfirmed, so "Refresh models" may fail silently for Grok and just keep the two model names built in here.</div>
+    <div class="hint" id="savedKeyPreview" style="font-weight:600;"></div>
 
     <label class="field-label">Other services, only fill in the ones you actually use</label>
     <div class="key-grid">
@@ -647,6 +648,17 @@
   };
   const $ = id => document.getElementById(id);
 
+  function sanitizeKey(raw){
+    let v = (raw || '');
+    v = v.replace(/[​-‍﻿ ]/g, '');
+    v = v.trim();
+    v = v.replace(/^["']+|["']+$/g, '');
+    v = v.replace(/^Bearer\s+/i, '');
+    v = v.replace(/\s+/g, '');
+    return v;
+  }
+  function last4(v){ return v && v.length > 4 ? '...' + v.slice(-4) : (v ? v : ''); }
+
   function getKeys(){
     return {
       anthropic: localStorage.getItem('rf_key_anthropic') || '',
@@ -674,25 +686,50 @@
     const activeProvider = localStorage.getItem('rf_active_llm_provider') || 'anthropic';
     $('llmProviderSelect').value = activeProvider;
     $('llmProviderKeyInput').value = k[activeProvider] || '';
+    updateSavedKeyPreview(activeProvider, k[activeProvider] || '');
+  }
+  function updateSavedKeyPreview(provider, key){
+    $('savedKeyPreview').textContent = key
+      ? 'Currently saved for ' + provider + ': key ending in ' + last4(key) + ', length ' + key.length + ' characters. Check this matches your console before assuming the app is broken.'
+      : 'No key saved for ' + provider + ' yet.';
   }
   $('llmProviderSelect').addEventListener('change', () => {
     const provider = $('llmProviderSelect').value;
-    $('llmProviderKeyInput').value = getKeys()[provider] || '';
+    const k = getKeys()[provider] || '';
+    $('llmProviderKeyInput').value = k;
+    updateSavedKeyPreview(provider, k);
   });
   $('saveKeysBtn').addEventListener('click', () => {
     const provider = $('llmProviderSelect').value;
-    localStorage.setItem('rf_key_' + provider, $('llmProviderKeyInput').value.trim());
+    const cleanedProviderKey = sanitizeKey($('llmProviderKeyInput').value);
+    $('llmProviderKeyInput').value = cleanedProviderKey;
+    localStorage.setItem('rf_key_' + provider, cleanedProviderKey);
     localStorage.setItem('rf_active_llm_provider', provider);
-    localStorage.setItem('rf_key_elevenlabs', $('key-elevenlabs').value.trim());
-    localStorage.setItem('rf_key_replicate', $('key-replicate').value.trim());
-    localStorage.setItem('rf_key_wavespeed', $('key-wavespeed').value.trim());
-    localStorage.setItem('rf_key_google_client_id', $('key-google-client-id').value.trim());
-    localStorage.setItem('rf_key_facebook_app_id', $('key-facebook-app-id').value.trim());
-    localStorage.setItem('rf_key_higgsfield_id', $('key-higgsfield-id').value.trim());
-    localStorage.setItem('rf_key_higgsfield_secret', $('key-higgsfield-secret').value.trim());
+    const cleanedEleven = sanitizeKey($('key-elevenlabs').value);
+    const cleanedReplicate = sanitizeKey($('key-replicate').value);
+    const cleanedWavespeed = sanitizeKey($('key-wavespeed').value);
+    const cleanedGoogleClient = sanitizeKey($('key-google-client-id').value);
+    const cleanedFacebookApp = sanitizeKey($('key-facebook-app-id').value);
+    const cleanedHiggsId = sanitizeKey($('key-higgsfield-id').value);
+    const cleanedHiggsSecret = sanitizeKey($('key-higgsfield-secret').value);
+    $('key-elevenlabs').value = cleanedEleven;
+    $('key-replicate').value = cleanedReplicate;
+    $('key-wavespeed').value = cleanedWavespeed;
+    $('key-google-client-id').value = cleanedGoogleClient;
+    $('key-facebook-app-id').value = cleanedFacebookApp;
+    $('key-higgsfield-id').value = cleanedHiggsId;
+    $('key-higgsfield-secret').value = cleanedHiggsSecret;
+    localStorage.setItem('rf_key_elevenlabs', cleanedEleven);
+    localStorage.setItem('rf_key_replicate', cleanedReplicate);
+    localStorage.setItem('rf_key_wavespeed', cleanedWavespeed);
+    localStorage.setItem('rf_key_google_client_id', cleanedGoogleClient);
+    localStorage.setItem('rf_key_facebook_app_id', cleanedFacebookApp);
+    localStorage.setItem('rf_key_higgsfield_id', cleanedHiggsId);
+    localStorage.setItem('rf_key_higgsfield_secret', cleanedHiggsSecret);
     $('saveKeysBtn').textContent = 'Saved';
     setTimeout(() => { $('saveKeysBtn').textContent = 'Save keys'; }, 1400);
-    if($('key-elevenlabs').value.trim()) populateVoiceSelect();
+    if(cleanedEleven) populateVoiceSelect();
+    updateSavedKeyPreview(provider, cleanedProviderKey);
   });
   $('settingsToggleBtn').addEventListener('click', () => $('settingsPanel').classList.toggle('open'));
   loadKeysIntoFields();
